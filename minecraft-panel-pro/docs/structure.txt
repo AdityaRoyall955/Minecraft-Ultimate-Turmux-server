@@ -1,0 +1,5 @@
+Project Structure:
+core/
+scripts/
+plugins/
+docs/
