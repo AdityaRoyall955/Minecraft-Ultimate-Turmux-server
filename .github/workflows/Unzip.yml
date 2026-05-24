@@ -1,4 +1,4 @@
-name: Unzip minecraft-panel-pro
+name: Unzip to Root
 
 on:
   workflow_dispatch:
@@ -15,8 +15,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Unzip the file
-        run: unzip -o minecraft-panel-pro.zip
+      - name: Unzip and extract to root
+        run: |
+          unzip -o minecraft-panel-pro.zip
+          if [ -d "minecraft-panel-pro" ]; then
+            mv minecraft-panel-pro/* .
+            rmdir minecraft-panel-pro
+          fi
 
       - name: Configure git
         run: |
@@ -27,6 +32,6 @@ jobs:
         run: |
           git add -A
           if ! git diff --cached --quiet; then
-            git commit -m "Extract minecraft-panel-pro.zip contents"
+            git commit -m "Extract minecraft-panel-pro to root folder"
             git push
           fi
