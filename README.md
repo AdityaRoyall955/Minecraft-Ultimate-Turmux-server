@@ -11,7 +11,7 @@ Inspired by advanced GitHub repository layouts like OpenClaw.
 
 ## Install
 ```bash
-git clone YOUR_REPO
+git clone https://github.com/AdityaRoyall955/Minecraft-Ultimate-Turmux-server.git
 cd minecraft-panel-pro
 bash install.sh
 ```
