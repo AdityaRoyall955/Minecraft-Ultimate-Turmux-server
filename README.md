@@ -2,6 +2,8 @@
 
 A Termux-optimized Minecraft server management panel supporting both **Java** (Paper/Purpur) and **Bedrock** (PowerNukkitX) editions!
 
+**🎮 Now supporting Minecraft 1.26.x (2026 Edition)!**
+
 ## Features ✨
 
 - **🎮 Multi-Edition Support** - Java (Paper/Purpur) AND Bedrock (PowerNukkitX)
@@ -13,6 +15,7 @@ A Termux-optimized Minecraft server management panel supporting both **Java** (P
 - **🔄 Daily Auto-Updates** - Repository auto-updates when new versions release!
 - **☁️ Repo Sync** - Check GitHub repo for latest versions and auto-update!
 - **📦 Always Latest** - Auto-detects latest Minecraft version from APIs!
+- **🆕 Minecraft 2026** - Supports new 1.26.x versioning!
 
 ## Install 📥
 
@@ -68,8 +71,8 @@ Output:
 ```
 🔍 Checking AdityaRoyall955/Minecraft-Ultimate-Turmux-server for updates...
 
-📱 Local version:  1.21.1-132
-📦 Repo version:   1.21.1-145
+📱 Local version:  1.26.2-112
+📦 Repo version:   1.26.2-145
 
 🎉 New version available!
 ```
@@ -82,12 +85,12 @@ Output:
 ```
 🔄 Checking PaperMC for updates...
 
-📱 Current version:  1.21.1-132
-📦 Latest version:   1.21.1-145
+📱 Current version:  1.26.2-112
+📦 Latest version:   1.26.2-145
 
 📥 Downloading update...
 💾 Backing up current jar...
-✅ PaperMC updated to 1.21.1-145!
+✅ PaperMC updated to 1.26.2-145!
 
 🚀 Run 'mc -s start' to use the new version
 ```
@@ -130,6 +133,13 @@ When new versions are released:
 - Termux (Android)
 - ~2GB free storage
 - ~2GB RAM recommended
+
+## 🆕 Minecraft 2026 (1.26.x)
+
+This panel now supports the new **Minecraft 2026** versioning!
+- New format: `1.26.x` instead of `1.21.x`
+- Download: `minecraft_server.26.2.jar`
+- Official: https://minecraft.net
 
 ## Troubleshooting 🔧
 
