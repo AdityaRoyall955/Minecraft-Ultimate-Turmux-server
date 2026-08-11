@@ -1,5 +1,30 @@
 Project Structure:
-core/
-scripts/
-plugins/
-docs/
+==================
+minecraft-server/
+├── menu.sh              # Main control script
+├── core/
+│   └── server.conf      # Server configuration
+├── scripts/
+│   └── setup_server.sh  # Dependency installer
+├── plugins/
+│   └── download_plugins.sh
+├── docs/
+│   └── structure.txt
+├── server.jar           # Minecraft server
+├── server.properties    # Minecraft config
+├── eula.txt             # Mojang EULA
+├── world/               # Overworld data
+├── world_nether/        # Nether dimension
+├── world_the_end/       # End dimension
+└── plugins/             # Plugin JARs
+
+Commands:
+---------
+mc -s setup     Install dependencies
+mc -s start     Start the server
+mc -s restart   Restart the server
+mc -s stop      Stop the server
+mc -s delete    Delete world files (DANGER!)
+mc -s plugins   Download Geyser + Floodgate
+mc -s update    Update server jar
+mc -s status    Check server status
