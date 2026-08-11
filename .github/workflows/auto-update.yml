@@ -1,0 +1,182 @@
+name: Auto Update Server JARs
+
+on:
+  schedule:
+    # Run daily at 00:00 UTC
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  check-updates:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      
+    - name: Setup Git
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+    
+    - name: Check PaperMC Updates
+      id: check-paper
+      run: |
+        echo "🔍 Checking PaperMC for updates..."
+        
+        # Get latest Paper version info
+        PAPER_VERSION=$(curl -s https://api.papermc.io/v2/projects/paper | jq -r '.versions[-1]')
+        PAPER_BUILD=$(curl -s "https://api.papermc.io/v2/projects/paper/versions/${PAPER_VERSION}/builds" | jq -r '.builds[-1].build')
+        
+        echo "Latest Paper: Version ${PAPER_VERSION}, Build ${PAPER_BUILD}"
+        
+        # Read current version
+        if [ -f "versions/paper.version" ]; then
+          CURRENT_PAPER=$(cat versions/paper.version)
+        else
+          CURRENT_PAPER="none"
+        fi
+        
+        echo "Current: ${CURRENT_PAPER}"
+        echo "Latest: ${PAPER_VERSION}-${PAPER_BUILD}"
+        
+        NEW_VERSION="${PAPER_VERSION}-${PAPER_BUILD}"
+        
+        if [ "$CURRENT_PAPER" != "$NEW_VERSION" ]; then
+          echo "📥 New PaperMC version found!"
+          
+          # Download new version
+          DOWNLOAD_URL="https://api.papermc.io/v2/projects/paper/versions/${PAPER_VERSION}/builds/${PAPER_BUILD}/downloads/paper-${PAPER_VERSION}-${PAPER_BUILD}.jar"
+          
+          echo "URL: ${DOWNLOAD_URL}"
+          
+          # Update version file
+          mkdir -p versions
+          echo "${NEW_VERSION}" > versions/paper.version
+          
+          # Update menu.sh with new URL
+          sed -i "s|wget -O server.jar \"https://fill-data.papermc.io/.*|wget -O server.jar \"${DOWNLOAD_URL}\"|" menu.sh
+          
+          echo "paper_updated=true" >> $GITHUB_OUTPUT
+          echo "paper_version=${NEW_VERSION}" >> $GITHUB_OUTPUT
+          echo "✅ PaperMC updated to ${NEW_VERSION}"
+        else
+          echo "✓ PaperMC is up to date"
+          echo "paper_updated=false" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Check Purpur Updates
+      id: check-purpur
+      run: |
+        echo "🔍 Checking Purpur for updates..."
+        
+        # Get latest Purpur version
+        PURPUR_VERSION=$(curl -s https://api.purpurmc.org/v2/purpur | jq -r '.versions[-1]')
+        PURPUR_BUILD=$(curl -s "https://api.purpurmc.org/v2/purpur/${PURPUR_VERSION}" | jq -r '.builds.all[-1]')
+        
+        echo "Latest Purpur: Version ${PURPUR_VERSION}, Build ${PURPUR_BUILD}"
+        
+        # Read current version
+        if [ -f "versions/purpur.version" ]; then
+          CURRENT_PURPUR=$(cat versions/purpur.version)
+        else
+          CURRENT_PURPUR="none"
+        fi
+        
+        echo "Current: ${CURRENT_PURPUR}"
+        echo "Latest: ${PURPUR_VERSION}-${PURPUR_BUILD}"
+        
+        NEW_VERSION="${PURPUR_VERSION}-${PURPUR_BUILD}"
+        
+        if [ "$CURRENT_PURPUR" != "$NEW_VERSION" ]; then
+          echo "📥 New Purpur version found!"
+          
+          # Update version file
+          mkdir -p versions
+          echo "${NEW_VERSION}" > versions/purpur.version
+          
+          echo "purpur_updated=true" >> $GITHUB_OUTPUT
+          echo "purpur_version=${NEW_VERSION}" >> $GITHUB_OUTPUT
+          echo "✅ Purpur updated to ${NEW_VERSION}"
+        else
+          echo "✓ Purpur is up to date"
+          echo "purpur_updated=false" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Check PowerNukkitX Updates
+      id: check-pnx
+      run: |
+        echo "🔍 Checking PowerNukkitX for updates..."
+        
+        # Get latest PowerNukkitX release
+        PNX_RELEASE=$(curl -s https://api.github.com/repos/PowerNukkitX/PowerNukkitX/releases/latest | jq -r '.tag_name')
+        
+        echo "Latest PowerNukkitX: ${PNX_RELEASE}"
+        
+        # Read current version
+        if [ -f "versions/powernukkitx.version" ]; then
+          CURRENT_PNX=$(cat versions/powernukkitx.version)
+        else
+          CURRENT_PNX="none"
+        fi
+        
+        echo "Current: ${CURRENT_PNX}"
+        echo "Latest: ${PNX_RELEASE}"
+        
+        if [ "$CURRENT_PNX" != "$PNX_RELEASE" ]; then
+          echo "📥 New PowerNukkitX version found!"
+          
+          # Get download URL for new version
+          PNX_URL=$(curl -s https://api.github.com/repos/PowerNukkitX/PowerNukkitX/releases/latest | jq -r '.assets[] | select(.name | contains("powernukkitx")) | .browser_download_url' | head -1)
+          
+          if [ -z "$PNX_URL" ]; then
+            PNX_URL="https://github.com/PowerNukkitX/PowerNukkitX/releases/download/${PNX_RELEASE}/powernukkitx.jar"
+          fi
+          
+          echo "URL: ${PNX_URL}"
+          
+          # Update version file
+          mkdir -p versions
+          echo "${PNX_RELEASE}" > versions/powernukkitx.version
+          
+          # Update menu.sh with new URL
+          sed -i "s|wget -O powernukkitx.jar \"https://github.com/PowerNukkitX/.*|wget -O powernukkitx.jar \"${PNX_URL}\"|" menu.sh
+          
+          echo "pnx_updated=true" >> $GITHUB_OUTPUT
+          echo "pnx_version=${PNX_RELEASE}" >> $GITHUB_OUTPUT
+          echo "✅ PowerNukkitX updated to ${PNX_RELEASE}"
+        else
+          echo "✓ PowerNukkitX is up to date"
+          echo "pnx_updated=false" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Commit and Push Changes
+      if: steps.check-paper.outputs.paper_updated == 'true' || steps.check-purpur.outputs.purpur_updated == 'true' || steps.check-pnx.outputs.pnx_updated == 'true'
+      run: |
+        echo "📝 Committing updates..."
+        
+        # Build commit message
+        COMMIT_MSG="Auto-update:"
+        
+        if [ "${{ steps.check-paper.outputs.paper_updated }}" == "true" ]; then
+          COMMIT_MSG="${COMMIT_MSG} PaperMC ${{ steps.check-paper.outputs.paper_version }}"
+        fi
+        
+        if [ "${{ steps.check-purpur.outputs.purpur_updated }}" == "true" ]; then
+          COMMIT_MSG="${COMMIT_MSG} Purpur ${{ steps.check-purpur.outputs.purpur_version }}"
+        fi
+        
+        if [ "${{ steps.check-pnx.outputs.pnx_updated }}" == "true" ]; then
+          COMMIT_MSG="${COMMIT_MSG} PowerNukkitX ${{ steps.check-pnx.outputs.pnx_version }}"
+        fi
+        
+        git add -A
+        git commit -m "$COMMIT_MSG"
+        git push
+        
+        echo "✅ Updates pushed to repository!"
+    
+    - name: No Updates
+      if: steps.check-paper.outputs.paper_updated != 'true' && steps.check-purpur.outputs.purpur_updated != 'true' && steps.check-pnx.outputs.pnx_updated != 'true'
+      run: |
+        echo "✓ All server software is up to date. No changes needed."

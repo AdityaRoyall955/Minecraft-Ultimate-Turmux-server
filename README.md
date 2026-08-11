@@ -10,6 +10,7 @@ A Termux-optimized Minecraft server management panel supporting both **Java** (P
 - **🔌 Plugin Auto-Download** - Geyser + Floodgate for Java crossplay
 - **📱 Termux Launcher** - Simple `mc` command from anywhere
 - **⬇️ Auto-Download** - Fetches server jars automatically
+- **🔄 Daily Auto-Updates** - Repository auto-updates when new versions release!
 
 ## Install 📥
 
@@ -52,6 +53,33 @@ mc -s software   # Change server software
 mc -s plugins    # Download Geyser + Floodgate
 ```
 
+## 🔄 Daily Auto-Update System
+
+This repository automatically checks for updates **daily at 00:00 UTC**!
+
+### What gets updated?
+- ✅ **PaperMC** - Latest builds from PaperMC API
+- ✅ **Purpur** - Latest builds from PurpurMC API
+- ✅ **PowerNukkitX** - Latest releases from GitHub
+
+### How it works:
+1. GitHub Actions runs daily via cron schedule
+2. Checks each server software's API for new versions
+3. Compares with `versions/*.version` files
+4. Updates download URLs in `menu.sh` automatically
+5. Commits and pushes changes to repository
+
+### Manual Update Check:
+```bash
+bash scripts/check_updates.sh
+```
+
+### Version Tracking:
+Current versions are tracked in:
+- `versions/paper.version`
+- `versions/purpur.version`
+- `versions/powernukkitx.version`
+
 ## Server Types 📋
 
 | Type | Edition | Description |
@@ -79,5 +107,8 @@ mc -s plugins    # Download Geyser + Floodgate
 
 **Out of memory?**
 Lower RAM in `core/server.conf`
+
+**Want latest server version?**
+Run `mc -s update` or wait for daily auto-update!
 
 Made with 💜 for Minecraft server admins!
