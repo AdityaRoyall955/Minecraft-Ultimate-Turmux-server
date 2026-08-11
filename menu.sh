@@ -58,17 +58,14 @@ download_server() {
     
     case "$SERVER_TYPE" in
         Paper)
-            echo -e "${YELLOW}⬇️  Downloading PaperMC...${NC}"
-            # Get latest URL from repo
-            LATEST_URL=$(curl -s "${REPO_RAW_URL}/versions/paper.version")
-            if [[ -n "$LATEST_URL" ]]; then
-                echo -e "${CYAN}📋 Repo version: ${LATEST_URL}${NC}"
-            fi
-            wget -O server.jar "https://fill-data.papermc.io/v1/objects/bd3a58cf96874e5ea6643f5f6fe9b4f5bf9e34b795fa078c2f0ee8b98b2f907e/paper-26.2-112.jar"
+            echo -e "${YELLOW}⬇️  Downloading PaperMC 1.26...${NC}"
+            # Minecraft 2026 - Paper 1.26.x
+            wget -O server.jar "https://api.papermc.io/v2/projects/paper/versions/1.26.2/builds/112/downloads/paper-1.26.2-112.jar"
             ;;
         Purpur)
-            echo -e "${YELLOW}⬇️  Downloading Purpur...${NC}"
-            wget -O server.jar "https://api.purpurmc.org/v2/purpur/1.20.4/latest/download"
+            echo -e "${YELLOW}⬇️  Downloading Purpur 1.26...${NC}"
+            # Minecraft 2026 - Purpur 1.26.x
+            wget -O server.jar "https://api.purpurmc.org/v2/purpur/1.26.2/2325/download"
             ;;
         PowerNukkitX)
             echo -e "${MAGENTA}⬇️  Downloading PowerNukkitX (Bedrock)...${NC}"

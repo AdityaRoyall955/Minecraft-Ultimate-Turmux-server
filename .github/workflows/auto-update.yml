@@ -24,9 +24,9 @@ jobs:
       run: |
         echo "🔍 Checking PaperMC for updates..."
         
-        # Get latest Paper version info
-        PAPER_VERSION=$(curl -s https://api.papermc.io/v2/projects/paper | jq -r '.versions[-1]')
-        PAPER_BUILD=$(curl -s "https://api.papermc.io/v2/projects/paper/versions/${PAPER_VERSION}/builds" | jq -r '.builds[-1].build')
+        # Minecraft 2026 - Paper 1.26.x
+        PAPER_VERSION="1.26.2"
+        PAPER_BUILD=$(curl -s "https://api.papermc.io/v2/projects/paper/versions/1.26.2/builds" | jq -r '.builds[-1].build' 2>/dev/null || echo "112")
         
         echo "Latest Paper: Version ${PAPER_VERSION}, Build ${PAPER_BUILD}"
         
@@ -43,7 +43,7 @@ jobs:
         NEW_VERSION="${PAPER_VERSION}-${PAPER_BUILD}"
         
         if [ "$CURRENT_PAPER" != "$NEW_VERSION" ]; then
-          echo "📥 New PaperMC version found!"
+          echo "📥 New PaperMC 1.26 version found!"
           
           # Download new version
           DOWNLOAD_URL="https://api.papermc.io/v2/projects/paper/versions/${PAPER_VERSION}/builds/${PAPER_BUILD}/downloads/paper-${PAPER_VERSION}-${PAPER_BUILD}.jar"
@@ -55,13 +55,13 @@ jobs:
           echo "${NEW_VERSION}" > versions/paper.version
           
           # Update menu.sh with new URL
-          sed -i "s|wget -O server.jar \"https://fill-data.papermc.io/.*|wget -O server.jar \"${DOWNLOAD_URL}\"|" menu.sh
+          sed -i "s|wget -O server.jar \"https://api.papermc.io/v2/projects/paper/versions/1.26.*|wget -O server.jar \"${DOWNLOAD_URL}\"|" menu.sh
           
           echo "paper_updated=true" >> $GITHUB_OUTPUT
           echo "paper_version=${NEW_VERSION}" >> $GITHUB_OUTPUT
           echo "✅ PaperMC updated to ${NEW_VERSION}"
         else
-          echo "✓ PaperMC is up to date"
+          echo "✓ PaperMC 1.26 is up to date"
           echo "paper_updated=false" >> $GITHUB_OUTPUT
         fi
     

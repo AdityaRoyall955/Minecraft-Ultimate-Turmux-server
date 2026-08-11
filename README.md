@@ -119,8 +119,8 @@ When new versions are released:
 
 | Type | Edition | Description |
 |------|---------|-------------|
-| **PaperMC** | Java | High performance, plugin support |
-| **Purpur** | Java | Paper fork with extra features |
+| **PaperMC** | Java | High performance, plugin support (1.26.x) |
+| **Purpur** | Java | Paper fork with extra features (1.26.x) |
 | **PowerNukkitX** | Bedrock | Minecraft Bedrock for Termux |
 
 ## Ports 🔌
@@ -136,10 +136,12 @@ When new versions are released:
 
 ## 🆕 Minecraft 2026 (1.26.x)
 
-This panel now supports the new **Minecraft 2026** versioning!
-- New format: `1.26.x` instead of `1.21.x`
-- Download: `minecraft_server.26.2.jar`
-- Official: https://minecraft.net
+This panel supports the **Minecraft 2026** update:
+- **New format**: `1.26.x` (Minecraft 2026)
+- **PaperMC**: 1.26.2 with latest builds
+- **Purpur**: 1.26.2 with latest builds
+- **Download**: `paper-1.26.2-xxx.jar`
+- **Official**: https://minecraft.net
 
 ## Troubleshooting 🔧
 
@@ -160,4 +162,7 @@ mc -s start    # Start with new version!
 **Update not working?**
 Make sure you have internet connection and the repo is accessible.
 
+---
+
+**© 2026 - Minecraft Panel Pro**  
 Made with 💜 for Minecraft server admins!
