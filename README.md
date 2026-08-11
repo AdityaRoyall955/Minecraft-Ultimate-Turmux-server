@@ -52,18 +52,6 @@ mc -s software   # Change server software
 mc -s plugins    # Download Geyser + Floodgate
 ```
 
-## Configuration ⚙️
-
-Edit `~/minecraft-server/core/server.conf`:
-
-```bash
-SERVER_RAM=2000M
-MIN_RAM=1000M
-SERVER_TYPE=Paper        # Paper, Purpur, or PowerNukkitX
-JAVA_VERSION=21
-MC_VERSION=1.20.4
-```
-
 ## Server Types 📋
 
 | Type | Edition | Description |
