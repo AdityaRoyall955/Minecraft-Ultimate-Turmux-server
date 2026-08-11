@@ -91,9 +91,17 @@ jobs:
         if [ "$CURRENT_PURPUR" != "$NEW_VERSION" ]; then
           echo "📥 New Purpur version found!"
           
+          # Build download URL
+          PURPUR_URL="https://api.purpurmc.org/v2/purpur/${PURPUR_VERSION}/${PURPUR_BUILD}/download"
+          
+          echo "URL: ${PURPUR_URL}"
+          
           # Update version file
           mkdir -p versions
           echo "${NEW_VERSION}" > versions/purpur.version
+          
+          # Update menu.sh with new URL
+          sed -i "s|wget -O server.jar \"https://api.purpurmc.org/v2/purpur/.*|wget -O server.jar \"${PURPUR_URL}\"|" menu.sh
           
           echo "purpur_updated=true" >> $GITHUB_OUTPUT
           echo "purpur_version=${NEW_VERSION}" >> $GITHUB_OUTPUT

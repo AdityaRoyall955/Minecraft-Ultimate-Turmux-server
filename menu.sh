@@ -7,6 +7,12 @@ YELLOW="\e[1;33m"
 RED="\e[1;31m"
 BLUE="\e[1;34m"
 MAGENTA="\e[1;35m"
+WHITE="\e[1;37m"
+
+# GitHub Repo URL (for checking updates)
+REPO_OWNER="AdityaRoyall955"
+REPO_NAME="Minecraft-Ultimate-Turmux-server"
+REPO_RAW_URL="https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main"
 
 # Source configuration file
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -19,16 +25,33 @@ SERVER_RAM="${SERVER_RAM:-1500M}"
 SERVER_TYPE="${SERVER_TYPE:-Paper}"
 MIN_RAM="${MIN_RAM:-1000M}"
 
-# Determine server jar name based on type
-if [[ "$SERVER_TYPE" == "PowerNukkitX" ]]; then
-    SERVER_JAR="powernukkitx.jar"
-else
-    SERVER_JAR="server.jar"
-fi
+# Local versions directory
+LOCAL_VERSIONS_DIR="$SCRIPT_DIR/versions"
+mkdir -p "$LOCAL_VERSIONS_DIR"
+
+# Determine server jar name and version file based on type
+case "$SERVER_TYPE" in
+    Paper)
+        SERVER_JAR="server.jar"
+        VERSION_FILE="paper.version"
+        ;;
+    Purpur)
+        SERVER_JAR="server.jar"
+        VERSION_FILE="purpur.version"
+        ;;
+    PowerNukkitX)
+        SERVER_JAR="powernukkitx.jar"
+        VERSION_FILE="powernukkitx.version"
+        ;;
+    *)
+        SERVER_JAR="server.jar"
+        VERSION_FILE="paper.version"
+        ;;
+esac
 
 SERVER_CMD="java -Xmx${SERVER_RAM} -Xms${MIN_RAM} -jar ${SERVER_JAR} --nogui"
 
-# Function to download server jar
+# Function to get download URL from repo
 download_server() {
     echo -e "${CYAN}📥 Downloading ${SERVER_TYPE} server...${NC}"
     cd "$SCRIPT_DIR" || exit 1
@@ -36,6 +59,11 @@ download_server() {
     case "$SERVER_TYPE" in
         Paper)
             echo -e "${YELLOW}⬇️  Downloading PaperMC...${NC}"
+            # Get latest URL from repo
+            LATEST_URL=$(curl -s "${REPO_RAW_URL}/versions/paper.version")
+            if [[ -n "$LATEST_URL" ]]; then
+                echo -e "${CYAN}📋 Repo version: ${LATEST_URL}${NC}"
+            fi
             wget -O server.jar "https://fill-data.papermc.io/v1/objects/bd3a58cf96874e5ea6643f5f6fe9b4f5bf9e34b795fa078c2f0ee8b98b2f907e/paper-26.2-112.jar"
             ;;
         Purpur)
@@ -44,6 +72,11 @@ download_server() {
             ;;
         PowerNukkitX)
             echo -e "${MAGENTA}⬇️  Downloading PowerNukkitX (Bedrock)...${NC}"
+            # Get latest URL from repo
+            PNX_REPO_VERSION=$(curl -s "${REPO_RAW_URL}/versions/powernukkitx.version")
+            if [[ -n "$PNX_REPO_VERSION" ]]; then
+                echo -e "${CYAN}📋 Repo version: ${PNX_REPO_VERSION}${NC}"
+            fi
             wget -O powernukkitx.jar "https://github.com/PowerNukkitX/PowerNukkitX/releases/download/3.0.2/powernukkitx.jar"
             ;;
         *)
@@ -57,6 +90,98 @@ download_server() {
     else
         echo -e "${RED}❌ Failed to download server jar!${NC}"
         exit 1
+    fi
+}
+
+# Function to check for updates from repo
+check_repo_update() {
+    echo -e "${CYAN}🔍 Checking ${REPO_OWNER}/${REPO_NAME} for updates...${NC}"
+    echo ""
+    
+    # Get latest version from GitHub repo
+    REPO_VERSION=$(curl -s "${REPO_RAW_URL}/versions/${VERSION_FILE}" 2>/dev/null)
+    
+    if [[ -z "$REPO_VERSION" ]]; then
+        echo -e "${YELLOW}⚠️  Could not fetch version from repo${NC}"
+        echo -e "${YELLOW}   Using local download...${NC}"
+        return 1
+    fi
+    
+    # Get local version
+    if [[ -f "$LOCAL_VERSIONS_DIR/${VERSION_FILE}" ]]; then
+        LOCAL_VERSION=$(cat "$LOCAL_VERSIONS_DIR/${VERSION_FILE}")
+    else
+        LOCAL_VERSION="none"
+    fi
+    
+    echo -e "${WHITE}📱 Local version:  ${LOCAL_VERSION}${NC}"
+    echo -e "${GREEN}📦 Repo version:   ${REPO_VERSION}${NC}"
+    echo ""
+    
+    if [[ "$LOCAL_VERSION" != "$REPO_VERSION" ]]; then
+        echo -e "${GREEN}🎉 New version available!${NC}"
+        return 0
+    else
+        echo -e "${GREEN}✅ You have the latest version!${NC}"
+        return 1
+    fi
+}
+
+# Function to update server from repo
+update_from_repo() {
+    echo -e "${CYAN}🔄 Checking for ${SERVER_TYPE} updates...${NC}"
+    echo ""
+    
+    # Get latest version from GitHub repo
+    REPO_VERSION=$(curl -s "${REPO_RAW_URL}/versions/${VERSION_FILE}" 2>/dev/null)
+    
+    if [[ -z "$REPO_VERSION" ]]; then
+        echo -e "${YELLOW}⚠️  Could not connect to repo${NC}"
+        echo -e "${CYAN}🔄 Updating with built-in URL...${NC}"
+        rm -f "$SCRIPT_DIR/${SERVER_JAR}"
+        download_server
+        return
+    fi
+    
+    # Get local version
+    if [[ -f "$LOCAL_VERSIONS_DIR/${VERSION_FILE}" ]]; then
+        LOCAL_VERSION=$(cat "$LOCAL_VERSIONS_DIR/${VERSION_FILE}")
+    else
+        LOCAL_VERSION="none"
+    fi
+    
+    echo -e "${WHITE}📱 Current version:  ${LOCAL_VERSION}${NC}"
+    echo -e "${GREEN}📦 Latest version:   ${REPO_VERSION}${NC}"
+    echo ""
+    
+    if [[ "$LOCAL_VERSION" != "$REPO_VERSION" ]]; then
+        echo -e "${GREEN}📥 Downloading update...${NC}"
+        
+        # Backup old jar
+        if [[ -f "$SCRIPT_DIR/${SERVER_JAR}" ]]; then
+            echo -e "${YELLOW}💾 Backing up current jar...${NC}"
+            mv "$SCRIPT_DIR/${SERVER_JAR}" "$SCRIPT_DIR/${SERVER_JAR}.backup"
+        fi
+        
+        # Download new version
+        rm -f "$SCRIPT_DIR/${SERVER_JAR}"
+        download_server
+        
+        # Update local version file
+        echo "$REPO_VERSION" > "$LOCAL_VERSIONS_DIR/${VERSION_FILE}"
+        
+        echo ""
+        echo -e "${GREEN}✅ ${SERVER_TYPE} updated to ${REPO_VERSION}!${NC}"
+        echo -e "${CYAN}🚀 Run 'mc -s start' to use the new version${NC}"
+    else
+        echo -e "${GREEN}✅ Already up to date!${NC}"
+        
+        # Check if jar exists, if not download it
+        if [[ ! -f "$SCRIPT_DIR/${SERVER_JAR}" ]]; then
+            echo -e "${YELLOW}⚠️  Server jar missing, downloading...${NC}"
+            download_server
+            echo "$REPO_VERSION" > "$LOCAL_VERSIONS_DIR/${VERSION_FILE}"
+        fi
     fi
 }
 
@@ -76,19 +201,27 @@ select_software() {
     case "$choice" in
         1)
             SERVER_TYPE="Paper"
+            VERSION_FILE="paper.version"
+            SERVER_JAR="server.jar"
             echo -e "${GREEN}✅ Selected: PaperMC (Java)${NC}"
             ;;
         2)
             SERVER_TYPE="Purpur"
+            VERSION_FILE="purpur.version"
+            SERVER_JAR="server.jar"
             echo -e "${GREEN}✅ Selected: Purpur (Java)${NC}"
             ;;
         3)
             SERVER_TYPE="PowerNukkitX"
+            VERSION_FILE="powernukkitx.version"
+            SERVER_JAR="powernukkitx.jar"
             echo -e "${GREEN}✅ Selected: PowerNukkitX (Bedrock)${NC}"
             ;;
         *)
             echo -e "${YELLOW}⚠️  Invalid choice, defaulting to PaperMC${NC}"
             SERVER_TYPE="Paper"
+            VERSION_FILE="paper.version"
+            SERVER_JAR="server.jar"
             ;;
     esac
     
@@ -106,9 +239,26 @@ select_software() {
 echo -e "${GREEN}🔥 Minecraft Panel Pro Loaded!${NC}"
 
 check_server_jar() {
+    # First check if we need to update from repo
+    if [[ -f "$LOCAL_VERSIONS_DIR/${VERSION_FILE}" ]]; then
+        LOCAL_VER=$(cat "$LOCAL_VERSIONS_DIR/${VERSION_FILE}")
+        REPO_VER=$(curl -s "${REPO_RAW_URL}/versions/${VERSION_FILE}" 2>/dev/null)
+        
+        if [[ -n "$REPO_VER" && "$LOCAL_VER" != "$REPO_VER" ]]; then
+            echo -e "${YELLOW}⚠️  New version available in repo: ${REPO_VER}${NC}"
+            echo -e "${CYAN}   Run 'mc -s update' to get the latest version${NC}"
+            echo ""
+        fi
+    fi
+    
     if [[ ! -f "$SCRIPT_DIR/${SERVER_JAR}" ]]; then
         echo -e "${YELLOW}⚠️  Server jar not found!${NC}"
         download_server
+        # Save version after download
+        REPO_VER=$(curl -s "${REPO_RAW_URL}/versions/${VERSION_FILE}" 2>/dev/null)
+        if [[ -n "$REPO_VER" ]]; then
+            echo "$REPO_VER" > "$LOCAL_VERSIONS_DIR/${VERSION_FILE}"
+        fi
     fi
 }
 
@@ -121,12 +271,26 @@ case "$2" in
         check_server_jar
         cd "$SCRIPT_DIR" || exit 1
         echo -e "${CYAN}🚀 Starting ${SERVER_TYPE} server with ${SERVER_RAM} RAM...${NC}"
+        
+        # Show current version
+        if [[ -f "$LOCAL_VERSIONS_DIR/${VERSION_FILE}" ]]; then
+            CURRENT_VER=$(cat "$LOCAL_VERSIONS_DIR/${VERSION_FILE}")
+            echo -e "${GREEN}📦 Version: ${CURRENT_VER}${NC}"
+        fi
+        
         $SERVER_CMD
         ;;
     restart)
         check_server_jar
         cd "$SCRIPT_DIR" || exit 1
         echo -e "${YELLOW}🔄 Restarting ${SERVER_TYPE} server...${NC}"
+        
+        # Show current version
+        if [[ -f "$LOCAL_VERSIONS_DIR/${VERSION_FILE}" ]]; then
+            CURRENT_VER=$(cat "$LOCAL_VERSIONS_DIR/${VERSION_FILE}")
+            echo -e "${GREEN}📦 Version: ${CURRENT_VER}${NC}"
+        fi
+        
         $SERVER_CMD
         ;;
     stop)
@@ -152,16 +316,26 @@ case "$2" in
         fi
         ;;
     update)
-        check_server_jar
-        echo -e "${CYAN}🔄 Updating ${SERVER_TYPE} server jar...${NC}"
-        rm -f "$SCRIPT_DIR/${SERVER_JAR}"
-        download_server
+        update_from_repo
+        ;;
+    check)
+        check_repo_update
         ;;
     status)
         if pgrep -f "${SERVER_JAR}" > /dev/null; then
             echo -e "${GREEN}✅ ${SERVER_TYPE} server is running!${NC}"
+            # Show version
+            if [[ -f "$LOCAL_VERSIONS_DIR/${VERSION_FILE}" ]]; then
+                CURRENT_VER=$(cat "$LOCAL_VERSIONS_DIR/${VERSION_FILE}")
+                echo -e "${CYAN}📦 Version: ${CURRENT_VER}${NC}"
+            fi
         else
             echo -e "${YELLOW}⏹️  ${SERVER_TYPE} server is not running.${NC}"
+            # Show version
+            if [[ -f "$LOCAL_VERSIONS_DIR/${VERSION_FILE}" ]]; then
+                CURRENT_VER=$(cat "$LOCAL_VERSIONS_DIR/${VERSION_FILE}")
+                echo -e "${CYAN}📦 Installed version: ${CURRENT_VER}${NC}"
+            fi
         fi
         ;;
     software)
@@ -177,7 +351,8 @@ case "$2" in
         echo "  stop       - Request server stop"
         echo "  delete     - Delete world and plugin files (DANGER!)"
         echo "  plugins    - Download plugins (Java only)"
-        echo "  update     - Update server jar to latest version"
+        echo "  update     - Check repo & update to latest version"
+        echo "  check      - Check if new version available"
         echo "  status     - Check if server is running"
         echo "  software   - Change server software"
         ;;
