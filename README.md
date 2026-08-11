@@ -12,6 +12,7 @@ A Termux-optimized Minecraft server management panel supporting both **Java** (P
 - **⬇️ Auto-Download** - Fetches server jars automatically
 - **🔄 Daily Auto-Updates** - Repository auto-updates when new versions release!
 - **☁️ Repo Sync** - Check GitHub repo for latest versions and auto-update!
+- **📦 Always Latest** - Auto-detects latest Minecraft version from APIs!
 
 ## Install 📥
 
@@ -67,8 +68,8 @@ Output:
 ```
 🔍 Checking AdityaRoyall955/Minecraft-Ultimate-Turmux-server for updates...
 
-📱 Local version:  1.20.4-496
-📦 Repo version:   1.20.4-512
+📱 Local version:  1.21.1-132
+📦 Repo version:   1.21.1-145
 
 🎉 New version available!
 ```
@@ -81,12 +82,12 @@ Output:
 ```
 🔄 Checking PaperMC for updates...
 
-📱 Current version:  1.20.4-496
-📦 Latest version:   1.20.4-512
+📱 Current version:  1.21.1-132
+📦 Latest version:   1.21.1-145
 
 📥 Downloading update...
 💾 Backing up current jar...
-✅ PaperMC updated to 1.20.4-512!
+✅ PaperMC updated to 1.21.1-145!
 
 🚀 Run 'mc -s start' to use the new version
 ```
