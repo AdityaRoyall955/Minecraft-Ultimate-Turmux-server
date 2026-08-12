@@ -60,12 +60,12 @@ download_server() {
         Paper)
             echo -e "${YELLOW}⬇️  Downloading PaperMC 1.26...${NC}"
             # Minecraft 2026 - Paper 1.26.x
-            wget -O server.jar "https://api.papermc.io/v2/projects/paper/versions/1.26.2/builds/112/downloads/paper-1.26.2-112.jar"
+            wget -O server.jar "https://api.papermc.io/v2/projects/paper/versions/1.26.2/builds/null/downloads/paper-1.26.2-null.jar"
             ;;
         Purpur)
             echo -e "${YELLOW}⬇️  Downloading Purpur 1.26...${NC}"
             # Minecraft 2026 - Purpur 1.26.x
-            wget -O server.jar "https://api.purpurmc.org/v2/purpur/1.26.2/2325/download"
+            wget -O server.jar "https://api.purpurmc.org/v2/purpur/26.2/2620/download"
             ;;
         PowerNukkitX)
             echo -e "${MAGENTA}⬇️  Downloading PowerNukkitX (Bedrock)...${NC}"
