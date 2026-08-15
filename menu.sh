@@ -74,7 +74,7 @@ download_server() {
             if [[ -n "$PNX_REPO_VERSION" ]]; then
                 echo -e "${CYAN}📋 Repo version: ${PNX_REPO_VERSION}${NC}"
             fi
-            wget -O powernukkitx.jar "https://github.com/PowerNukkitX/PowerNukkitX/releases/download/3.0.2/powernukkitx.jar"
+            wget -O powernukkitx.jar "https://github.com/PowerNukkitX/PowerNukkitX/releases/download/3.0.3/powernukkitx.jar"
             ;;
         *)
             echo -e "${RED}❌ Unknown server type: ${SERVER_TYPE}${NC}"
