@@ -17,6 +17,11 @@ A Termux-optimized Minecraft server management panel supporting both **Java** (P
 - **📦 Always Latest** - Auto-detects latest Minecraft version from APIs!
 - **🆕 Minecraft 2026** - Supports new 1.26.x versioning!
 
+![Minecraft Version](https://shields.io)
+![Platform](https://shields.io)
+![License](https://shields.io)
+
+
 ## Install 📥
 
 ```bash
