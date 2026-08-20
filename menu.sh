@@ -65,7 +65,7 @@ download_server() {
         Purpur)
             echo -e "${YELLOW}⬇️  Downloading Purpur 1.26...${NC}"
             # Minecraft 2026 - Purpur 1.26.x
-            wget -O server.jar "https://api.purpurmc.org/v2/purpur/26.2/2620/download"
+            wget -O server.jar "https://api.purpurmc.org/v2/purpur/26.2/2622/download"
             ;;
         PowerNukkitX)
             echo -e "${MAGENTA}⬇️  Downloading PowerNukkitX (Bedrock)...${NC}"
