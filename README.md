@@ -14,8 +14,8 @@ A Termux-optimized Minecraft server management panel supporting both **Java** (P
 - **⬇️ Auto-Download** - Fetches server jars automatically
 - **🔄 Daily Auto-Updates** - Repository auto-updates when new versions release!
 - **☁️ Repo Sync** - Check GitHub repo for latest versions and auto-update!
-- **📦 Always Latest** - Auto-detects latest Minecraft version from APIs!
-- **🆕 Minecraft 2026** - Supports new 1.26.x versioning!
+- **📦 Auto-Detect** - Automatically detects latest Minecraft version from Paper/Purpur APIs!
+- **🆕 Auto-Version** - No hardcoded versions! Always gets latest from APIs!
 
 ![Minecraft Version](https://shields.io)
 ![Platform](https://shields.io)

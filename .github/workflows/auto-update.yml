@@ -22,11 +22,11 @@ jobs:
     - name: Check PaperMC Updates
       id: check-paper
       run: |
-        echo "🔍 Checking PaperMC for updates..."
+        echo "🔍 Auto-detecting latest PaperMC version..."
         
-        # Minecraft 2026 - Paper 1.26.x
-        PAPER_VERSION="1.26.2"
-        PAPER_BUILD=$(curl -s "https://api.papermc.io/v2/projects/paper/versions/1.26.2/builds" | jq -r '.builds[-1].build' 2>/dev/null || echo "112")
+        # Auto-detect latest version from API
+        PAPER_VERSION=$(curl -s https://api.papermc.io/v2/projects/paper | jq -r '.versions[-1]')
+        PAPER_BUILD=$(curl -s "https://api.papermc.io/v2/projects/paper/versions/${PAPER_VERSION}/builds" | jq -r '.builds[-1].build')
         
         echo "Latest Paper: Version ${PAPER_VERSION}, Build ${PAPER_BUILD}"
         
@@ -43,7 +43,7 @@ jobs:
         NEW_VERSION="${PAPER_VERSION}-${PAPER_BUILD}"
         
         if [ "$CURRENT_PAPER" != "$NEW_VERSION" ]; then
-          echo "📥 New PaperMC 1.26 version found!"
+          echo "📥 New PaperMC version found: ${NEW_VERSION}"
           
           # Download new version
           DOWNLOAD_URL="https://api.papermc.io/v2/projects/paper/versions/${PAPER_VERSION}/builds/${PAPER_BUILD}/downloads/paper-${PAPER_VERSION}-${PAPER_BUILD}.jar"
@@ -54,25 +54,25 @@ jobs:
           mkdir -p versions
           echo "${NEW_VERSION}" > versions/paper.version
           
-          # Update menu.sh with new URL
-          sed -i "s|wget -O server.jar \"https://api.papermc.io/v2/projects/paper/versions/1.26.*|wget -O server.jar \"${DOWNLOAD_URL}\"|" menu.sh
+          # Update menu.sh with new URL (using auto-detect pattern)
+          sed -i "s|PAPER_VERSION=.*|PAPER_VERSION=\"${PAPER_VERSION}\"|" menu.sh 2>/dev/null || true
           
           echo "paper_updated=true" >> $GITHUB_OUTPUT
           echo "paper_version=${NEW_VERSION}" >> $GITHUB_OUTPUT
           echo "✅ PaperMC updated to ${NEW_VERSION}"
         else
-          echo "✓ PaperMC 1.26 is up to date"
+          echo "✓ PaperMC is up to date (${CURRENT_PAPER})"
           echo "paper_updated=false" >> $GITHUB_OUTPUT
         fi
     
     - name: Check Purpur Updates
       id: check-purpur
       run: |
-        echo "🔍 Checking Purpur for updates..."
+        echo "🔍 Auto-detecting latest Purpur version..."
         
-        # Minecraft 2026 - Purpur 1.26.x
-        PURPUR_VERSION="1.26.2"
-        PURPUR_BUILD=$(curl -s "https://api.purpurmc.org/v2/purpur/1.26.2" | jq -r '.builds.all[-1]' 2>/dev/null || echo "2622")
+        # Auto-detect latest version from API
+        PURPUR_VERSION=$(curl -s https://api.purpurmc.org/v2/purpur | jq -r '.versions[-1]')
+        PURPUR_BUILD=$(curl -s "https://api.purpurmc.org/v2/purpur/${PURPUR_VERSION}" | jq -r '.builds.all[-1]')
         
         echo "Latest Purpur: Version ${PURPUR_VERSION}, Build ${PURPUR_BUILD}"
         
@@ -89,7 +89,7 @@ jobs:
         NEW_VERSION="${PURPUR_VERSION}-${PURPUR_BUILD}"
         
         if [ "$CURRENT_PURPUR" != "$NEW_VERSION" ]; then
-          echo "📥 New Purpur version found!"
+          echo "📥 New Purpur version found: ${NEW_VERSION}"
           
           # Build download URL
           PURPUR_URL="https://api.purpurmc.org/v2/purpur/${PURPUR_VERSION}/${PURPUR_BUILD}/download"
@@ -100,23 +100,20 @@ jobs:
           mkdir -p versions
           echo "${NEW_VERSION}" > versions/purpur.version
           
-          # Update menu.sh with new URL
-          sed -i "s|wget -O server.jar \"https://api.purpurmc.org/v2/purpur/.*|wget -O server.jar \"${PURPUR_URL}\"|" menu.sh
-          
           echo "purpur_updated=true" >> $GITHUB_OUTPUT
           echo "purpur_version=${NEW_VERSION}" >> $GITHUB_OUTPUT
           echo "✅ Purpur updated to ${NEW_VERSION}"
         else
-          echo "✓ Purpur is up to date"
+          echo "✓ Purpur is up to date (${CURRENT_PURPUR})"
           echo "purpur_updated=false" >> $GITHUB_OUTPUT
         fi
     
     - name: Check PowerNukkitX Updates
       id: check-pnx
       run: |
-        echo "🔍 Checking PowerNukkitX for updates..."
+        echo "🔍 Auto-detecting latest PowerNukkitX version..."
         
-        # Get latest PowerNukkitX release
+        # Get latest PowerNukkitX release from GitHub
         PNX_RELEASE=$(curl -s https://api.github.com/repos/PowerNukkitX/PowerNukkitX/releases/latest | jq -r '.tag_name')
         
         echo "Latest PowerNukkitX: ${PNX_RELEASE}"
@@ -132,7 +129,7 @@ jobs:
         echo "Latest: ${PNX_RELEASE}"
         
         if [ "$CURRENT_PNX" != "$PNX_RELEASE" ]; then
-          echo "📥 New PowerNukkitX version found!"
+          echo "📥 New PowerNukkitX version found: ${PNX_RELEASE}"
           
           # Get download URL for new version
           PNX_URL=$(curl -s https://api.github.com/repos/PowerNukkitX/PowerNukkitX/releases/latest | jq -r '.assets[] | select(.name | contains("powernukkitx")) | .browser_download_url' | head -1)
@@ -147,14 +144,11 @@ jobs:
           mkdir -p versions
           echo "${PNX_RELEASE}" > versions/powernukkitx.version
           
-          # Update menu.sh with new URL
-          sed -i "s|wget -O powernukkitx.jar \"https://github.com/PowerNukkitX/.*|wget -O powernukkitx.jar \"${PNX_URL}\"|" menu.sh
-          
           echo "pnx_updated=true" >> $GITHUB_OUTPUT
           echo "pnx_version=${PNX_RELEASE}" >> $GITHUB_OUTPUT
           echo "✅ PowerNukkitX updated to ${PNX_RELEASE}"
         else
-          echo "✓ PowerNukkitX is up to date"
+          echo "✓ PowerNukkitX is up to date (${CURRENT_PNX})"
           echo "pnx_updated=false" >> $GITHUB_OUTPUT
         fi
     
@@ -188,3 +182,6 @@ jobs:
       if: steps.check-paper.outputs.paper_updated != 'true' && steps.check-purpur.outputs.purpur_updated != 'true' && steps.check-pnx.outputs.pnx_updated != 'true'
       run: |
         echo "✓ All server software is up to date. No changes needed."
+        echo ""
+        echo "Current versions:"
+        cat versions/*.version 2>/dev/null || echo "No versions tracked yet"

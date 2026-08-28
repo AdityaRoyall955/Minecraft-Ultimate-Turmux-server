@@ -12,7 +12,7 @@ WHITE="\e[1;37m"
 # GitHub Repo URL (for checking updates)
 REPO_OWNER="AdityaRoyall955"
 REPO_NAME="Minecraft-Ultimate-Turmux-server"
-REPO_RAW_URL="https://raw.githubusercontent.com/AdityaRoyall955/Minecraft-Ultimate-Turmux-server/main"
+REPO_RAW_URL="https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main"
 
 # Source configuration file
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -51,6 +51,69 @@ esac
 
 SERVER_CMD="java -Xmx${SERVER_RAM} -Xms${MIN_RAM} -jar ${SERVER_JAR} --nogui"
 
+# Function to auto-detect latest Paper version
+get_latest_paper() {
+    echo -e "${CYAN}🔍 Auto-detecting latest Paper version...${NC}"
+    
+    # Get latest version from PaperMC API
+    PAPER_VERSION=$(curl -s "https://api.papermc.io/v2/projects/paper" | grep -o '"[0-9]\+\.[0-9]\+\.[0-9]\+"' | tr -d '"' | tail -1)
+    if [[ -z "$PAPER_VERSION" ]]; then
+        PAPER_VERSION="1.26.2"
+    fi
+    
+    # Get latest build for that version
+    PAPER_BUILD=$(curl -s "https://api.papermc.io/v2/projects/paper/versions/${PAPER_VERSION}/builds" | grep -o '"build":[0-9]*' | grep -o '[0-9]*' | tail -1)
+    if [[ -z "$PAPER_BUILD" ]]; then
+        PAPER_BUILD="132"
+    fi
+    
+    echo -e "${GREEN}📦 Latest Paper: ${PAPER_VERSION}-${PAPER_BUILD}${NC}"
+    echo "${PAPER_VERSION}-${PAPER_BUILD}" > "$LOCAL_VERSIONS_DIR/paper.version"
+    
+    DOWNLOAD_URL="https://api.papermc.io/v2/projects/paper/versions/${PAPER_VERSION}/builds/${PAPER_BUILD}/downloads/paper-${PAPER_VERSION}-${PAPER_BUILD}.jar"
+    echo "$DOWNLOAD_URL"
+}
+
+# Function to auto-detect latest Purpur version
+get_latest_purpur() {
+    echo -e "${CYAN}🔍 Auto-detecting latest Purpur version...${NC}"
+    
+    # Get latest version from Purpur API
+    PURPUR_VERSION=$(curl -s "https://api.purpurmc.org/v2/purpur" | grep -o '"[0-9]\+\.[0-9]\+\.[0-9]\+"' | tr -d '"' | tail -1)
+    if [[ -z "$PURPUR_VERSION" ]]; then
+        PURPUR_VERSION="1.26.2"
+    fi
+    
+    # Get latest build for that version
+    PURPUR_BUILD=$(curl -s "https://api.purpurmc.org/v2/purpur/${PURPUR_VERSION}" | grep -o '[0-9]*' | tail -1)
+    if [[ -z "$PURPUR_BUILD" ]]; then
+        PURPUR_BUILD="2622"
+    fi
+    
+    echo -e "${GREEN}📦 Latest Purpur: ${PURPUR_VERSION}-${PURPUR_BUILD}${NC}"
+    echo "${PURPUR_VERSION}-${PURPUR_BUILD}" > "$LOCAL_VERSIONS_DIR/purpur.version"
+    
+    DOWNLOAD_URL="https://api.purpurmc.org/v2/purpur/${PURPUR_VERSION}/${PURPUR_BUILD}/download"
+    echo "$DOWNLOAD_URL"
+}
+
+# Function to auto-detect latest PowerNukkitX version
+get_latest_pnx() {
+    echo -e "${CYAN}🔍 Auto-detecting latest PowerNukkitX version...${NC}"
+    
+    # Get latest release from GitHub
+    PNX_VERSION=$(curl -s "https://api.github.com/repos/PowerNukkitX/PowerNukkitX/releases/latest" | grep -o '"tag_name":"[^"]*"' | cut -d'"' -f4)
+    if [[ -z "$PNX_VERSION" ]]; then
+        PNX_VERSION="3.0.3"
+    fi
+    
+    echo -e "${GREEN}📦 Latest PowerNukkitX: ${PNX_VERSION}${NC}"
+    echo "${PNX_VERSION}" > "$LOCAL_VERSIONS_DIR/powernukkitx.version"
+    
+    DOWNLOAD_URL="https://github.com/PowerNukkitX/PowerNukkitX/releases/download/${PNX_VERSION}/powernukkitx.jar"
+    echo "$DOWNLOAD_URL"
+}
+
 # Function to get download URL from repo
 download_server() {
     echo -e "${CYAN}📥 Downloading ${SERVER_TYPE} server...${NC}"
@@ -58,23 +121,19 @@ download_server() {
     
     case "$SERVER_TYPE" in
         Paper)
-            echo -e "${YELLOW}⬇️  Downloading PaperMC 1.26...${NC}"
-            # Minecraft 2026 - Paper 1.26.x (build 132)
-            wget -O server.jar "https://api.papermc.io/v2/projects/paper/versions/1.26.2/builds/132/downloads/paper-1.26.2-132.jar"
+            echo -e "${YELLOW}⬇️  Downloading latest PaperMC...${NC}"
+            PAPER_URL=$(get_latest_paper)
+            wget -O server.jar "$PAPER_URL"
             ;;
         Purpur)
-            echo -e "${YELLOW}⬇️  Downloading Purpur 1.26...${NC}"
-            # Minecraft 2026 - Purpur 1.26.x (build 2622)
-            wget -O server.jar "https://api.purpurmc.org/v2/purpur/1.26.2/2622/download"
+            echo -e "${YELLOW}⬇️  Downloading latest Purpur...${NC}"
+            PURPUR_URL=$(get_latest_purpur)
+            wget -O server.jar "$PURPUR_URL"
             ;;
         PowerNukkitX)
-            echo -e "${MAGENTA}⬇️  Downloading PowerNukkitX (Bedrock)...${NC}"
-            # Get latest URL from repo
-            PNX_REPO_VERSION=$(curl -s "${REPO_RAW_URL}/versions/powernukkitx.version")
-            if [[ -n "$PNX_REPO_VERSION" ]]; then
-                echo -e "${CYAN}📋 Repo version: ${PNX_REPO_VERSION}${NC}"
-            fi
-            wget -O powernukkitx.jar "https://github.com/PowerNukkitX/PowerNukkitX/releases/download/3.0.3/powernukkitx.jar"
+            echo -e "${MAGENTA}⬇️  Downloading latest PowerNukkitX (Bedrock)...${NC}"
+            PNX_URL=$(get_latest_pnx)
+            wget -O powernukkitx.jar "$PNX_URL"
             ;;
         *)
             echo -e "${RED}❌ Unknown server type: ${SERVER_TYPE}${NC}"
@@ -100,7 +159,28 @@ check_repo_update() {
     
     if [[ -z "$REPO_VERSION" ]]; then
         echo -e "${YELLOW}⚠️  Could not fetch version from repo${NC}"
-        echo -e "${YELLOW}   Using local download...${NC}"
+        echo -e "${YELLOW}   Using auto-detect...${NC}"
+        
+        # Auto-detect instead
+        case "$SERVER_TYPE" in
+            Paper)
+                REPO_VERSION=$(curl -s "https://api.papermc.io/v2/projects/paper" | grep -o '"[0-9]\+\.[0-9]\+\.[0-9]\+"' | tr -d '"' | tail -1)
+                REPO_BUILD=$(curl -s "https://api.papermc.io/v2/projects/paper/versions/${REPO_VERSION}/builds" | grep -o '"build":[0-9]*' | grep -o '[0-9]*' | tail -1)
+                REPO_VERSION="${REPO_VERSION}-${REPO_BUILD}"
+                ;;
+            Purpur)
+                REPO_VERSION=$(curl -s "https://api.purpurmc.org/v2/purpur" | grep -o '"[0-9]\+\.[0-9]\+\.[0-9]\+"' | tr -d '"' | tail -1)
+                REPO_BUILD=$(curl -s "https://api.purpurmc.org/v2/purpur/${REPO_VERSION}" | grep -o '[0-9]*' | tail -1)
+                REPO_VERSION="${REPO_VERSION}-${REPO_BUILD}"
+                ;;
+            PowerNukkitX)
+                REPO_VERSION=$(curl -s "https://api.github.com/repos/PowerNukkitX/PowerNukkitX/releases/latest" | grep -o '"tag_name":"[^"]*"' | cut -d'"' -f4)
+                ;;
+        esac
+    fi
+    
+    if [[ -z "$REPO_VERSION" ]]; then
+        echo -e "${RED}❌ Could not detect version${NC}"
         return 1
     fi
     
@@ -112,7 +192,7 @@ check_repo_update() {
     fi
     
     echo -e "${WHITE}📱 Local version:  ${LOCAL_VERSION}${NC}"
-    echo -e "${GREEN}📦 Repo version:   ${REPO_VERSION}${NC}"
+    echo -e "${GREEN}📦 Latest version: ${REPO_VERSION}${NC}"
     echo ""
     
     if [[ "$LOCAL_VERSION" != "$REPO_VERSION" ]]; then
@@ -129,12 +209,26 @@ update_from_repo() {
     echo -e "${CYAN}🔄 Checking for ${SERVER_TYPE} updates...${NC}"
     echo ""
     
-    # Get latest version from GitHub repo
-    REPO_VERSION=$(curl -s "${REPO_RAW_URL}/versions/${VERSION_FILE}" 2>/dev/null)
+    # Auto-detect latest version
+    case "$SERVER_TYPE" in
+        Paper)
+            LATEST_VERSION=$(curl -s "https://api.papermc.io/v2/projects/paper" | grep -o '"[0-9]\+\.[0-9]\+\.[0-9]\+"' | tr -d '"' | tail -1)
+            LATEST_BUILD=$(curl -s "https://api.papermc.io/v2/projects/paper/versions/${LATEST_VERSION}/builds" | grep -o '"build":[0-9]*' | grep -o '[0-9]*' | tail -1)
+            REPO_VERSION="${LATEST_VERSION}-${LATEST_BUILD}"
+            ;;
+        Purpur)
+            LATEST_VERSION=$(curl -s "https://api.purpurmc.org/v2/purpur" | grep -o '"[0-9]\+\.[0-9]\+\.[0-9]\+"' | tr -d '"' | tail -1)
+            LATEST_BUILD=$(curl -s "https://api.purpurmc.org/v2/purpur/${LATEST_VERSION}" | grep -o '[0-9]*' | tail -1)
+            REPO_VERSION="${LATEST_VERSION}-${LATEST_BUILD}"
+            ;;
+        PowerNukkitX)
+            REPO_VERSION=$(curl -s "https://api.github.com/repos/PowerNukkitX/PowerNukkitX/releases/latest" | grep -o '"tag_name":"[^"]*"' | cut -d'"' -f4)
+            ;;
+    esac
     
     if [[ -z "$REPO_VERSION" ]]; then
-        echo -e "${YELLOW}⚠️  Could not connect to repo${NC}"
-        echo -e "${CYAN}🔄 Updating with built-in URL...${NC}"
+        echo -e "${YELLOW}⚠️  Could not connect to APIs${NC}"
+        echo -e "${CYAN}🔄 Using built-in download...${NC}"
         rm -f "$SCRIPT_DIR/${SERVER_JAR}"
         download_server
         return
@@ -222,13 +316,27 @@ select_software() {
             ;;
     esac
     
+    # Auto-detect latest version for config
+    case "$SERVER_TYPE" in
+        Paper)
+            MC_VER=$(curl -s "https://api.papermc.io/v2/projects/paper" | grep -o '"[0-9]\+\.[0-9]\+\.[0-9]\+"' | tr -d '"' | tail -1)
+            ;;
+        Purpur)
+            MC_VER=$(curl -s "https://api.purpurmc.org/v2/purpur" | grep -o '"[0-9]\+\.[0-9]\+\.[0-9]\+"' | tr -d '"' | tail -1)
+            ;;
+        PowerNukkitX)
+            MC_VER="latest"
+            ;;
+    esac
+    [[ -z "$MC_VER" ]] && MC_VER="1.26.2"
+    
     # Save selection to config
     echo "# Minecraft Server Configuration" > "$SCRIPT_DIR/core/server.conf"
     echo "SERVER_RAM=${SERVER_RAM:-1500M}" >> "$SCRIPT_DIR/core/server.conf"
     echo "MIN_RAM=${MIN_RAM:-1000M}" >> "$SCRIPT_DIR/core/server.conf"
     echo "SERVER_TYPE=${SERVER_TYPE}" >> "$SCRIPT_DIR/core/server.conf"
     echo "JAVA_VERSION=${JAVA_VERSION:-21}" >> "$SCRIPT_DIR/core/server.conf"
-    echo "MC_VERSION=${MC_VERSION:-1.26.2}" >> "$SCRIPT_DIR/core/server.conf"
+    echo "MC_VERSION=${MC_VER}" >> "$SCRIPT_DIR/core/server.conf"
     
     echo -e "${CYAN}💾 Configuration saved!${NC}"
 }
@@ -239,10 +347,26 @@ check_server_jar() {
     # First check if we need to update from repo
     if [[ -f "$LOCAL_VERSIONS_DIR/${VERSION_FILE}" ]]; then
         LOCAL_VER=$(cat "$LOCAL_VERSIONS_DIR/${VERSION_FILE}")
-        REPO_VER=$(curl -s "${REPO_RAW_URL}/versions/${VERSION_FILE}" 2>/dev/null)
+        
+        # Auto-detect latest
+        case "$SERVER_TYPE" in
+            Paper)
+                LATEST_VER=$(curl -s "https://api.papermc.io/v2/projects/paper" | grep -o '"[0-9]\+\.[0-9]\+\.[0-9]\+"' | tr -d '"' | tail -1)
+                LATEST_BUILD=$(curl -s "https://api.papermc.io/v2/projects/paper/versions/${LATEST_VER}/builds" | grep -o '"build":[0-9]*' | grep -o '[0-9]*' | tail -1)
+                REPO_VER="${LATEST_VER}-${LATEST_BUILD}"
+                ;;
+            Purpur)
+                LATEST_VER=$(curl -s "https://api.purpurmc.org/v2/purpur" | grep -o '"[0-9]\+\.[0-9]\+\.[0-9]\+"' | tr -d '"' | tail -1)
+                LATEST_BUILD=$(curl -s "https://api.purpurmc.org/v2/purpur/${LATEST_VER}" | grep -o '[0-9]*' | tail -1)
+                REPO_VER="${LATEST_VER}-${LATEST_BUILD}"
+                ;;
+            PowerNukkitX)
+                REPO_VER=$(curl -s "https://api.github.com/repos/PowerNukkitX/PowerNukkitX/releases/latest" | grep -o '"tag_name":"[^"]*"' | cut -d'"' -f4)
+                ;;
+        esac
         
         if [[ -n "$REPO_VER" && "$LOCAL_VER" != "$REPO_VER" ]]; then
-            echo -e "${YELLOW}⚠️  New version available in repo: ${REPO_VER}${NC}"
+            echo -e "${YELLOW}⚠️  New version available: ${REPO_VER}${NC}"
             echo -e "${CYAN}   Run 'mc -s update' to get the latest version${NC}"
             echo ""
         fi
@@ -252,10 +376,13 @@ check_server_jar() {
         echo -e "${YELLOW}⚠️  Server jar not found!${NC}"
         download_server
         # Save version after download
-        REPO_VER=$(curl -s "${REPO_RAW_URL}/versions/${VERSION_FILE}" 2>/dev/null)
-        if [[ -n "$REPO_VER" ]]; then
-            echo "$REPO_VER" > "$LOCAL_VERSIONS_DIR/${VERSION_FILE}"
-        fi
+        case "$SERVER_TYPE" in
+            Paper|Purpur)
+                if [[ -f "$LOCAL_VERSIONS_DIR/${VERSION_FILE}" ]]; then
+                    echo "$(cat $LOCAL_VERSIONS_DIR/${VERSION_FILE})" > "$LOCAL_VERSIONS_DIR/${VERSION_FILE}"
+                fi
+                ;;
+        esac
     fi
 }
 

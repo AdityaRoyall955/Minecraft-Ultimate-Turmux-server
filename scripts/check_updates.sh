@@ -22,8 +22,7 @@ REPO_OWNER="AdityaRoyall955"
 REPO_NAME="Minecraft-Ultimate-Turmux-server"
 REPO_RAW_URL="https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main"
 
-echo -e "${CYAN}🔍 Checking GitHub repo for updates...${NC}"
-echo -e "${CYAN}📦 Repo: ${REPO_OWNER}/${REPO_NAME}${NC}"
+echo -e "${CYAN}🔍 Auto-detecting latest versions from APIs...${NC}"
 echo ""
 
 UPDATES_FOUND=false
@@ -31,11 +30,14 @@ UPDATES_FOUND=false
 # ==================== PaperMC Check ====================
 echo -e "${CYAN}📋 Checking PaperMC...${NC}"
 
-# Get latest from repo
-PAPER_REPO=$(curl -s "${REPO_RAW_URL}/versions/paper.version" 2>/dev/null)
-if [[ -z "$PAPER_REPO" ]]; then
-    echo -e "${YELLOW}  ⚠️  Could not fetch Paper version from repo${NC}"
-    PAPER_REPO="unknown"
+# Auto-detect latest from API
+PAPER_LATEST_VER=$(curl -s "https://api.papermc.io/v2/projects/paper" | grep -o '"[0-9]\+\.[0-9]\+\.[0-9]\+"' | tr -d '"' | tail -1)
+PAPER_LATEST_BUILD=$(curl -s "https://api.papermc.io/v2/projects/paper/versions/${PAPER_LATEST_VER}/builds" | grep -o '"build":[0-9]*' | grep -o '[0-9]*' | tail -1)
+PAPER_LATEST="${PAPER_LATEST_VER}-${PAPER_LATEST_BUILD}"
+
+if [[ -z "$PAPER_LATEST" ]]; then
+    echo -e "${YELLOW}  ⚠️  Could not fetch Paper version from API${NC}"
+    PAPER_LATEST="unknown"
 fi
 
 # Get current local version
@@ -46,16 +48,14 @@ else
 fi
 
 echo "  Local:  ${PAPER_CURRENT}"
-echo "  Repo:   ${PAPER_REPO}"
+echo "  Latest: ${PAPER_LATEST}"
 
-if [ "$PAPER_CURRENT" != "$PAPER_REPO" ] && [ "$PAPER_REPO" != "unknown" ]; then
+if [ "$PAPER_CURRENT" != "$PAPER_LATEST" ] && [ "$PAPER_LATEST" != "unknown" ]; then
     echo -e "  ${GREEN}📥 PaperMC update available!${NC}"
-    echo "$PAPER_REPO" > "$VERSIONS_DIR/paper.version"
+    echo "$PAPER_LATEST" > "$VERSIONS_DIR/paper.version"
     
-    # Get the PaperMC download URL from API
-    PAPER_VERSION=$(echo $PAPER_REPO | cut -d'-' -f1)
-    PAPER_BUILD=$(echo $PAPER_REPO | cut -d'-' -f2)
-    PAPER_URL="https://api.papermc.io/v2/projects/paper/versions/${PAPER_VERSION}/builds/${PAPER_BUILD}/downloads/paper-${PAPER_VERSION}-${PAPER_BUILD}.jar"
+    # Get the PaperMC download URL
+    PAPER_URL="https://api.papermc.io/v2/projects/paper/versions/${PAPER_LATEST_VER}/builds/${PAPER_LATEST_BUILD}/downloads/paper-${PAPER_LATEST_VER}-${PAPER_LATEST_BUILD}.jar"
     
     # Update menu.sh
     sed -i "s|wget -O server.jar \"https://fill-data.papermc.io/.*|wget -O server.jar \"${PAPER_URL}\"|" "$SCRIPT_DIR/menu.sh"
@@ -71,11 +71,14 @@ echo ""
 # ==================== Purpur Check ====================
 echo -e "${CYAN}📋 Checking Purpur...${NC}"
 
-# Get latest from repo
-PURPUR_REPO=$(curl -s "${REPO_RAW_URL}/versions/purpur.version" 2>/dev/null)
-if [[ -z "$PURPUR_REPO" ]]; then
-    echo -e "${YELLOW}  ⚠️  Could not fetch Purpur version from repo${NC}"
-    PURPUR_REPO="unknown"
+# Auto-detect latest from API
+PURPUR_LATEST_VER=$(curl -s "https://api.purpurmc.org/v2/purpur" | grep -o '"[0-9]\+\.[0-9]\+\.[0-9]\+"' | tr -d '"' | tail -1)
+PURPUR_LATEST_BUILD=$(curl -s "https://api.purpurmc.org/v2/purpur/${PURPUR_LATEST_VER}" | grep -o '[0-9]*' | tail -1)
+PURPUR_LATEST="${PURPUR_LATEST_VER}-${PURPUR_LATEST_BUILD}"
+
+if [[ -z "$PURPUR_LATEST" ]]; then
+    echo -e "${YELLOW}  ⚠️  Could not fetch Purpur version from API${NC}"
+    PURPUR_LATEST="unknown"
 fi
 
 # Get current local version
@@ -86,16 +89,14 @@ else
 fi
 
 echo "  Local:  ${PURPUR_CURRENT}"
-echo "  Repo:   ${PURPUR_REPO}"
+echo "  Latest: ${PURPUR_LATEST}"
 
-if [ "$PURPUR_CURRENT" != "$PURPUR_REPO" ] && [ "$PURPUR_REPO" != "unknown" ]; then
+if [ "$PURPUR_CURRENT" != "$PURPUR_LATEST" ] && [ "$PURPUR_LATEST" != "unknown" ]; then
     echo -e "  ${GREEN}📥 Purpur update available!${NC}"
-    echo "$PURPUR_REPO" > "$VERSIONS_DIR/purpur.version"
+    echo "$PURPUR_LATEST" > "$VERSIONS_DIR/purpur.version"
     
-    # Extract version and build
-    PURPUR_VERSION=$(echo $PURPUR_REPO | cut -d'-' -f1)
-    PURPUR_BUILD=$(echo $PURPUR_REPO | cut -d'-' -f2)
-    PURPUR_URL="https://api.purpurmc.org/v2/purpur/${PURPUR_VERSION}/${PURPUR_BUILD}/download"
+    # Get download URL
+    PURPUR_URL="https://api.purpurmc.org/v2/purpur/${PURPUR_LATEST_VER}/${PURPUR_LATEST_BUILD}/download"
     
     # Update menu.sh
     sed -i "s|wget -O server.jar \"https://api.purpurmc.org/v2/purpur/.*|wget -O server.jar \"${PURPUR_URL}\"|" "$SCRIPT_DIR/menu.sh"
@@ -110,11 +111,12 @@ echo ""
 # ==================== PowerNukkitX Check ====================
 echo -e "${MAGENTA}📋 Checking PowerNukkitX...${NC}"
 
-# Get latest from repo
-PNX_REPO=$(curl -s "${REPO_RAW_URL}/versions/powernukkitx.version" 2>/dev/null)
-if [[ -z "$PNX_REPO" ]]; then
-    echo -e "${YELLOW}  ⚠️  Could not fetch PowerNukkitX version from repo${NC}"
-    PNX_REPO="unknown"
+# Auto-detect latest from GitHub
+PNX_LATEST=$(curl -s "https://api.github.com/repos/PowerNukkitX/PowerNukkitX/releases/latest" | grep -o '"tag_name":"[^"]*"' | cut -d'"' -f4)
+
+if [[ -z "$PNX_LATEST" ]]; then
+    echo -e "${YELLOW}  ⚠️  Could not fetch PowerNukkitX version from GitHub${NC}"
+    PNX_LATEST="unknown"
 fi
 
 # Get current local version
@@ -125,14 +127,14 @@ else
 fi
 
 echo "  Local:  ${PNX_CURRENT}"
-echo "  Repo:   ${PNX_REPO}"
+echo "  Latest: ${PNX_LATEST}"
 
-if [ "$PNX_CURRENT" != "$PNX_REPO" ] && [ "$PNX_REPO" != "unknown" ]; then
+if [ "$PNX_CURRENT" != "$PNX_LATEST" ] && [ "$PNX_LATEST" != "unknown" ]; then
     echo -e "  ${GREEN}📥 PowerNukkitX update available!${NC}"
-    echo "$PNX_REPO" > "$VERSIONS_DIR/powernukkitx.version"
+    echo "$PNX_LATEST" > "$VERSIONS_DIR/powernukkitx.version"
     
     # Get download URL
-    PNX_URL="https://github.com/PowerNukkitX/PowerNukkitX/releases/download/${PNX_REPO}/powernukkitx.jar"
+    PNX_URL="https://github.com/PowerNukkitX/PowerNukkitX/releases/download/${PNX_LATEST}/powernukkitx.jar"
     
     # Update menu.sh
     sed -i "s|wget -O powernukkitx.jar \"https://github.com/PowerNukkitX/.*|wget -O powernukkitx.jar \"${PNX_URL}\"|" "$SCRIPT_DIR/menu.sh"
@@ -157,7 +159,7 @@ if [ "$UPDATES_FOUND" = true ]; then
     echo "  git commit -m \"Auto-update server versions\""
     echo "  git push"
 else
-    echo -e "${GREEN}✅ All server software is up to date with repo!${NC}"
+    echo -e "${GREEN}✅ All server software is up to date!${NC}"
 fi
 
 echo ""
