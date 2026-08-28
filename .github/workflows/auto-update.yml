@@ -2,7 +2,6 @@ name: Auto Update Server JARs
 
 on:
   schedule:
-    # Run daily at 00:00 UTC
     - cron: '0 0 * * *'
   workflow_dispatch:
 
@@ -22,171 +21,100 @@ jobs:
     - name: Check PaperMC Updates
       id: check-paper
       run: |
-        echo "🔍 Auto-detecting latest PaperMC version..."
-        
-        # Auto-detect latest version from API
+        echo "Checking PaperMC..."
         PAPER_VERSION=$(curl -s https://api.papermc.io/v2/projects/paper | jq -r '.versions[-1]')
         PAPER_BUILD=$(curl -s "https://api.papermc.io/v2/projects/paper/versions/${PAPER_VERSION}/builds" | jq -r '.builds[-1].build')
+        NEW_VERSION="${PAPER_VERSION}-${PAPER_BUILD}"
         
-        echo "Latest Paper: Version ${PAPER_VERSION}, Build ${PAPER_BUILD}"
-        
-        # Read current version
         if [ -f "versions/paper.version" ]; then
           CURRENT_PAPER=$(cat versions/paper.version)
         else
           CURRENT_PAPER="none"
         fi
         
-        echo "Current: ${CURRENT_PAPER}"
-        echo "Latest: ${PAPER_VERSION}-${PAPER_BUILD}"
-        
-        NEW_VERSION="${PAPER_VERSION}-${PAPER_BUILD}"
-        
         if [ "$CURRENT_PAPER" != "$NEW_VERSION" ]; then
-          echo "📥 New PaperMC version found: ${NEW_VERSION}"
-          
-          # Download new version
-          DOWNLOAD_URL="https://api.papermc.io/v2/projects/paper/versions/${PAPER_VERSION}/builds/${PAPER_BUILD}/downloads/paper-${PAPER_VERSION}-${PAPER_BUILD}.jar"
-          
-          echo "URL: ${DOWNLOAD_URL}"
-          
-          # Update version file
+          echo "New PaperMC version: ${NEW_VERSION}"
           mkdir -p versions
           echo "${NEW_VERSION}" > versions/paper.version
-          
-          # Update menu.sh with new URL (using auto-detect pattern)
           sed -i "s|PAPER_VERSION=.*|PAPER_VERSION=\"${PAPER_VERSION}\"|" menu.sh 2>/dev/null || true
-          
           echo "paper_updated=true" >> $GITHUB_OUTPUT
           echo "paper_version=${NEW_VERSION}" >> $GITHUB_OUTPUT
           echo "paper_ver=${PAPER_VERSION}" >> $GITHUB_OUTPUT
-          echo "✅ PaperMC updated to ${NEW_VERSION}"
         else
-          echo "✓ PaperMC is up to date (${CURRENT_PAPER})"
+          echo "PaperMC up to date"
           echo "paper_updated=false" >> $GITHUB_OUTPUT
         fi
     
     - name: Check Purpur Updates
       id: check-purpur
       run: |
-        echo "🔍 Auto-detecting latest Purpur version..."
-        
-        # Auto-detect latest version from API
+        echo "Checking Purpur..."
         PURPUR_VERSION=$(curl -s https://api.purpurmc.org/v2/purpur | jq -r '.versions[-1]')
         PURPUR_BUILD=$(curl -s "https://api.purpurmc.org/v2/purpur/${PURPUR_VERSION}" | jq -r '.builds.all[-1]')
+        NEW_VERSION="${PURPUR_VERSION}-${PURPUR_BUILD}"
         
-        echo "Latest Purpur: Version ${PURPUR_VERSION}, Build ${PURPUR_BUILD}"
-        
-        # Read current version
         if [ -f "versions/purpur.version" ]; then
           CURRENT_PURPUR=$(cat versions/purpur.version)
         else
           CURRENT_PURPUR="none"
         fi
         
-        echo "Current: ${CURRENT_PURPUR}"
-        echo "Latest: ${PURPUR_VERSION}-${PURPUR_BUILD}"
-        
-        NEW_VERSION="${PURPUR_VERSION}-${PURPUR_BUILD}"
-        
         if [ "$CURRENT_PURPUR" != "$NEW_VERSION" ]; then
-          echo "📥 New Purpur version found: ${NEW_VERSION}"
-          
-          # Build download URL
-          PURPUR_URL="https://api.purpurmc.org/v2/purpur/${PURPUR_VERSION}/${PURPUR_BUILD}/download"
-          
-          echo "URL: ${PURPUR_URL}"
-          
-          # Update version file
+          echo "New Purpur version: ${NEW_VERSION}"
           mkdir -p versions
           echo "${NEW_VERSION}" > versions/purpur.version
-          
           echo "purpur_updated=true" >> $GITHUB_OUTPUT
           echo "purpur_version=${NEW_VERSION}" >> $GITHUB_OUTPUT
           echo "purpur_ver=${PURPUR_VERSION}" >> $GITHUB_OUTPUT
-          echo "✅ Purpur updated to ${NEW_VERSION}"
         else
-          echo "✓ Purpur is up to date (${CURRENT_PURPUR})"
+          echo "Purpur up to date"
           echo "purpur_updated=false" >> $GITHUB_OUTPUT
         fi
     
     - name: Check PowerNukkitX Updates
       id: check-pnx
       run: |
-        echo "🔍 Auto-detecting latest PowerNukkitX version..."
-        
-        # Get latest PowerNukkitX release from GitHub
+        echo "Checking PowerNukkitX..."
         PNX_RELEASE=$(curl -s https://api.github.com/repos/PowerNukkitX/PowerNukkitX/releases/latest | jq -r '.tag_name')
         
-        echo "Latest PowerNukkitX: ${PNX_RELEASE}"
-        
-        # Read current version
         if [ -f "versions/powernukkitx.version" ]; then
           CURRENT_PNX=$(cat versions/powernukkitx.version)
         else
           CURRENT_PNX="none"
         fi
         
-        echo "Current: ${CURRENT_PNX}"
-        echo "Latest: ${PNX_RELEASE}"
-        
         if [ "$CURRENT_PNX" != "$PNX_RELEASE" ]; then
-          echo "📥 New PowerNukkitX version found: ${PNX_RELEASE}"
-          
-          # Get download URL for new version
-          PNX_URL=$(curl -s https://api.github.com/repos/PowerNukkitX/PowerNukkitX/releases/latest | jq -r '.assets[] | select(.name | contains("powernukkitx")) | .browser_download_url' | head -1)
-          
-          if [ -z "$PNX_URL" ]; then
-            PNX_URL="https://github.com/PowerNukkitX/PowerNukkitX/releases/download/${PNX_RELEASE}/powernukkitx.jar"
-          fi
-          
-          echo "URL: ${PNX_URL}"
-          
-          # Update version file
+          echo "New PowerNukkitX version: ${PNX_RELEASE}"
           mkdir -p versions
           echo "${PNX_RELEASE}" > versions/powernukkitx.version
-          
           echo "pnx_updated=true" >> $GITHUB_OUTPUT
           echo "pnx_version=${PNX_RELEASE}" >> $GITHUB_OUTPUT
-          echo "✅ PowerNukkitX updated to ${PNX_RELEASE}"
         else
-          echo "✓ PowerNukkitX is up to date (${CURRENT_PNX})"
+          echo "PowerNukkitX up to date"
           echo "pnx_updated=false" >> $GITHUB_OUTPUT
         fi
     
-    - name: Commit and Push Changes
+    - name: Commit Changes
       if: steps.check-paper.outputs.paper_updated == 'true' || steps.check-purpur.outputs.purpur_updated == 'true' || steps.check-pnx.outputs.pnx_updated == 'true'
       run: |
-        echo "📝 Committing updates..."
-        
-        # Build commit message
         COMMIT_MSG="Auto-update:"
-        
         if [ "${{ steps.check-paper.outputs.paper_updated }}" == "true" ]; then
           COMMIT_MSG="${COMMIT_MSG} PaperMC ${{ steps.check-paper.outputs.paper_version }}"
         fi
-        
         if [ "${{ steps.check-purpur.outputs.purpur_updated }}" == "true" ]; then
           COMMIT_MSG="${COMMIT_MSG} Purpur ${{ steps.check-purpur.outputs.purpur_version }}"
         fi
-        
         if [ "${{ steps.check-pnx.outputs.pnx_updated }}" == "true" ]; then
           COMMIT_MSG="${COMMIT_MSG} PowerNukkitX ${{ steps.check-pnx.outputs.pnx_version }}"
         fi
-        
         git add -A
-        git commit -m "$COMMIT_MSG"
+        git commit -m "$COMMIT_MSG" || echo "Nothing to commit"
         git push
-        
-        echo "✅ Updates pushed to repository!"
     
-    - name: Create Release Zip and Changelog
+    - name: Create Release
       if: steps.check-paper.outputs.paper_updated == 'true' || steps.check-purpur.outputs.purpur_updated == 'true' || steps.check-pnx.outputs.pnx_updated == 'true'
       id: create-zip
       run: |
-        echo "📦 Creating release zip and changelog..."
-        
-        # Determine release version (use Paper version if available, otherwise Purpur, otherwise PNX)
         if [ "${{ steps.check-paper.outputs.paper_updated }}" == "true" ]; then
           RELEASE_VER="${{ steps.check-paper.outputs.paper_ver }}"
         elif [ "${{ steps.check-purpur.outputs.purpur_updated }}" == "true" ]; then
@@ -195,71 +123,35 @@ jobs:
           RELEASE_VER="${{ steps.check-pnx.outputs.pnx_version }}"
         fi
         
-        # Create zip file with proper name
         ZIP_NAME="AdityaMods Server Software ${RELEASE_VER}.zip"
-        echo "Creating: ${ZIP_NAME}"
+        zip -r "${ZIP_NAME}" . -x ".git/*" -x "${ZIP_NAME}"
         
-        # Create zip excluding .git directory
-        zip -r "${ZIP_NAME}" . -x ".git/*" -x "${ZIP_NAME}" -x "CHANGELOG.md"
-        
-        echo "✅ Zip created: ${ZIP_NAME}"
-        
-        # Create CHANGELOG.md using printf to avoid heredoc issues
-        printf '%s\n' "# Changelog - AdityaMods Server Software ${RELEASE_VER}" > CHANGELOG.md
-        printf '%s\n' "" >> CHANGELOG.md
-        printf '%s\n' "## 🎮 Release Date: $(date '+%Y-%m-%d %H:%M:%S UTC')" >> CHANGELOG.md
-        printf '%s\n' "" >> CHANGELOG.md
-        printf '%s\n' "## 📦 Updated Components:" >> CHANGELOG.md
-        printf '%s\n' "" >> CHANGELOG.md
+        echo "# Changelog - AdityaMods Server Software ${RELEASE_VER}" > CHANGELOG.md
+        echo "" >> CHANGELOG.md
+        echo "## Release Date: $(date '+%Y-%m-%d %H:%M:%S UTC')" >> CHANGELOG.md
+        echo "" >> CHANGELOG.md
+        echo "## Updated Components:" >> CHANGELOG.md
+        echo "" >> CHANGELOG.md
         
         if [ "${{ steps.check-paper.outputs.paper_updated }}" == "true" ]; then
-          printf '%s\n' "- ✅ **PaperMC** updated to \`${{ steps.check-paper.outputs.paper_version }}\`" >> CHANGELOG.md
+          echo "- PaperMC updated to ${{ steps.check-paper.outputs.paper_version }}" >> CHANGELOG.md
         fi
-        
         if [ "${{ steps.check-purpur.outputs.purpur_updated }}" == "true" ]; then
-          printf '%s\n' "- ✅ **Purpur** updated to \`${{ steps.check-purpur.outputs.purpur_version }}\`" >> CHANGELOG.md
+          echo "- Purpur updated to ${{ steps.check-purpur.outputs.purpur_version }}" >> CHANGELOG.md
         fi
-        
         if [ "${{ steps.check-pnx.outputs.pnx_updated }}" == "true" ]; then
-          printf '%s\n' "- ✅ **PowerNukkitX** updated to \`${{ steps.check-pnx.outputs.pnx_version }}\`" >> CHANGELOG.md
+          echo "- PowerNukkitX updated to ${{ steps.check-pnx.outputs.pnx_version }}" >> CHANGELOG.md
         fi
         
-        printf '%s\n' "" >> CHANGELOG.md
-        printf '%s\n' "## 📝 What's New:" >> CHANGELOG.md
-        printf '%s\n' "" >> CHANGELOG.md
-        printf '%s\n' "This release includes the latest Minecraft server software versions with automatic updates:" >> CHANGELOG.md
-        printf '%s\n' "" >> CHANGELOG.md
-        printf '%s\n' "- Auto-detected latest versions from official APIs" >> CHANGELOG.md
-        printf '%s\n' "- Updated download URLs in menu.sh" >> CHANGELOG.md
-        printf '%s\n' "- Version tracking files updated" >> CHANGELOG.md
-        printf '%s\n' "- All scripts tested and verified" >> CHANGELOG.md
-        printf '%s\n' "" >> CHANGELOG.md
-        printf '%s\n' "## 🚀 How to Use:" >> CHANGELOG.md
-        printf '%s\n' "" >> CHANGELOG.md
-        printf '%s\n' "1. Download the zip file below" >> CHANGELOG.md
-        printf '%s\n' "2. Extract and run \`bash install.sh\`" >> CHANGELOG.md
-        printf '%s\n' "3. Use \`mc -s setup\` to configure" >> CHANGELOG.md
-        printf '%s\n' "4. Use \`mc -s start\` to run your server!" >> CHANGELOG.md
-        printf '%s\n' "" >> CHANGELOG.md
-        printf '%s\n' "## 📋 Current Versions:" >> CHANGELOG.md
-        printf '%s\n' "" >> CHANGELOG.md
-        printf '%s\n' "| Software | Version |" >> CHANGELOG.md
-        printf '%s\n' "|----------|---------|" >> CHANGELOG.md
-        printf '%s\n' "| PaperMC | ${{ steps.check-paper.outputs.paper_version || 'No update' }} |" >> CHANGELOG.md
-        printf '%s\n' "| Purpur | ${{ steps.check-purpur.outputs.purpur_version || 'No update' }} |" >> CHANGELOG.md
-        printf '%s\n' "| PowerNukkitX | ${{ steps.check-pnx.outputs.pnx_version || 'No update' }} |" >> CHANGELOG.md
-        printf '%s\n' "" >> CHANGELOG.md
-        printf '%s\n' "## 🔧 Files Updated:" >> CHANGELOG.md
-        printf '%s\n' "" >> CHANGELOG.md
-        printf '%s\n' "- \`menu.sh\` - Updated download URLs" >> CHANGELOG.md
-        printf '%s\n' "- \`versions/*.version\` - Version tracking files" >> CHANGELOG.md
-        printf '%s\n' "- \`CHANGELOG.md\` - This changelog" >> CHANGELOG.md
-        printf '%s\n' "" >> CHANGELOG.md
-        printf '%s\n' "---" >> CHANGELOG.md
-        printf '%s\n' "**Auto-generated by GitHub Actions** 🤖  " >> CHANGELOG.md
-        printf '%s\n' "**Repository:** https://github.com/${{ github.repository }}" >> CHANGELOG.md
+        echo "" >> CHANGELOG.md
+        echo "## Current Versions:" >> CHANGELOG.md
+        echo "" >> CHANGELOG.md
+        echo "| Software | Version |" >> CHANGELOG.md
+        echo "|----------|---------|" >> CHANGELOG.md
+        echo "| PaperMC | ${{ steps.check-paper.outputs.paper_version || 'No update' }} |" >> CHANGELOG.md
+        echo "| Purpur | ${{ steps.check-purpur.outputs.purpur_version || 'No update' }} |" >> CHANGELOG.md
+        echo "| PowerNukkitX | ${{ steps.check-pnx.outputs.pnx_version || 'No update' }} |" >> CHANGELOG.md
         
-        echo "✅ Changelog created: CHANGELOG.md"
         echo "zip_name=${ZIP_NAME}" >> $GITHUB_OUTPUT
         echo "release_ver=${RELEASE_VER}" >> $GITHUB_OUTPUT
     
@@ -286,11 +178,3 @@ jobs:
         asset_path: ${{ steps.create-zip.outputs.zip_name }}
         asset_name: ${{ steps.create-zip.outputs.zip_name }}
         asset_content_type: application/zip
-    
-    - name: No Updates
-      if: steps.check-paper.outputs.paper_updated != 'true' && steps.check-purpur.outputs.purpur_updated != 'true' && steps.check-pnx.outputs.pnx_updated != 'true'
-      run: |
-        echo "✓ All server software is up to date. No changes needed."
-        echo ""
-        echo "Current versions:"
-        cat versions/*.version 2>/dev/null || echo "No versions tracked yet"
