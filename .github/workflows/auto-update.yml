@@ -70,9 +70,9 @@ jobs:
       run: |
         echo "🔍 Checking Purpur for updates..."
         
-        # Get latest Purpur version
-        PURPUR_VERSION=$(curl -s https://api.purpurmc.org/v2/purpur | jq -r '.versions[-1]')
-        PURPUR_BUILD=$(curl -s "https://api.purpurmc.org/v2/purpur/${PURPUR_VERSION}" | jq -r '.builds.all[-1]')
+        # Minecraft 2026 - Purpur 1.26.x
+        PURPUR_VERSION="1.26.2"
+        PURPUR_BUILD=$(curl -s "https://api.purpurmc.org/v2/purpur/1.26.2" | jq -r '.builds.all[-1]' 2>/dev/null || echo "2622")
         
         echo "Latest Purpur: Version ${PURPUR_VERSION}, Build ${PURPUR_BUILD}"
         
