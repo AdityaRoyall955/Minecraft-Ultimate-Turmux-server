@@ -59,13 +59,13 @@ download_server() {
     case "$SERVER_TYPE" in
         Paper)
             echo -e "${YELLOW}⬇️  Downloading PaperMC 1.26...${NC}"
-            # Minecraft 2026 - Paper 1.26.x
-            wget -O server.jar "https://api.papermc.io/v2/projects/paper/versions/1.26.2/builds/null/downloads/paper-1.26.2-null.jar"
+            # Minecraft 2026 - Paper 1.26.x (build 132)
+            wget -O server.jar "https://api.papermc.io/v2/projects/paper/versions/1.26.2/builds/132/downloads/paper-1.26.2-132.jar"
             ;;
         Purpur)
             echo -e "${YELLOW}⬇️  Downloading Purpur 1.26...${NC}"
-            # Minecraft 2026 - Purpur 1.26.x
-            wget -O server.jar "https://api.purpurmc.org/v2/purpur/26.2/2622/download"
+            # Minecraft 2026 - Purpur 1.26.x (build 2622)
+            wget -O server.jar "https://api.purpurmc.org/v2/purpur/1.26.2/2622/download"
             ;;
         PowerNukkitX)
             echo -e "${MAGENTA}⬇️  Downloading PowerNukkitX (Bedrock)...${NC}"
@@ -228,7 +228,7 @@ select_software() {
     echo "MIN_RAM=${MIN_RAM:-1000M}" >> "$SCRIPT_DIR/core/server.conf"
     echo "SERVER_TYPE=${SERVER_TYPE}" >> "$SCRIPT_DIR/core/server.conf"
     echo "JAVA_VERSION=${JAVA_VERSION:-21}" >> "$SCRIPT_DIR/core/server.conf"
-    echo "MC_VERSION=${MC_VERSION:-1.20.4}" >> "$SCRIPT_DIR/core/server.conf"
+    echo "MC_VERSION=${MC_VERSION:-1.26.2}" >> "$SCRIPT_DIR/core/server.conf"
     
     echo -e "${CYAN}💾 Configuration saved!${NC}"
 }
