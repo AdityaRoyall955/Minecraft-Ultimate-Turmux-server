@@ -12,7 +12,7 @@ WHITE="\e[1;37m"
 # GitHub Repo URL (for checking updates)
 REPO_OWNER="AdityaRoyall955"
 REPO_NAME="Minecraft-Ultimate-Turmux-server"
-REPO_RAW_URL="https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main"
+REPO_RAW_URL="https://raw.githubusercontent.com/AdityaRoyall955/Minecraft-Ultimate-Turmux-server/main"
 
 # Source configuration file
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
