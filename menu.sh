@@ -56,9 +56,9 @@ get_latest_paper() {
     echo -e "${CYAN}🔍 Auto-detecting latest Paper version...${NC}"
     
     # Get latest version from PaperMC API
-    PAPER_VERSION=$(curl -s "https://api.papermc.io/v2/projects/paper" | grep -o '"[0-9]\+\.[0-9]\+\.[0-9]\+"' | tr -d '"' | tail -1)
+    PAPER_VERSION="null"
     if [[ -z "$PAPER_VERSION" ]]; then
-        PAPER_VERSION="1.26.2"
+        PAPER_VERSION="null"
     fi
     
     # Get latest build for that version
