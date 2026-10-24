@@ -162,8 +162,8 @@ When new versions are released:
 ## Requirements 📋
 
 - Termux (Android)
-- ~2GB free storage
-- ~2GB RAM recommended
+- ~4GB free storage
+- ~3 - 4GB RAM recommended
 
 ## 🆕 Minecraft 2026 (1.26.x)
 
