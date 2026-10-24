@@ -23,13 +23,14 @@ echo -e "${CYAN}📦 Updating packages...${NC}"
 pkg update -y
 
 echo -e "${CYAN}☕ Installing OpenJDK ${JAVA_VERSION}...${NC}"
-pkg install -y "openjdk-${JAVA_VERSION}" wget curl jq git nano
+pkg install -y "openjdk-${JAVA_VERSION}" wget curl jq git nano python
 
 echo -e "${GREEN}✅ Java installed!${NC}"
 java -version
 
 echo -e "${CYAN}📁 Creating server directories...${NC}"
 mkdir -p "$SCRIPT_DIR/plugins"
+mkdir -p "$SCRIPT_DIR/mods"
 mkdir -p "$SCRIPT_DIR/world"
 mkdir -p "$SCRIPT_DIR/backups"
 

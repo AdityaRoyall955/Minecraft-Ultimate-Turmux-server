@@ -39,6 +39,26 @@ case "$SERVER_TYPE" in
         SERVER_JAR="server.jar"
         VERSION_FILE="purpur.version"
         ;;
+    Folia)
+        SERVER_JAR="server.jar"
+        VERSION_FILE="folia.version"
+        ;;
+    Vanilla)
+        SERVER_JAR="server.jar"
+        VERSION_FILE="vanilla.version"
+        ;;
+    Fabric)
+        SERVER_JAR="server.jar"
+        VERSION_FILE="fabric.version"
+        ;;
+    Spigot)
+        SERVER_JAR="server.jar"
+        VERSION_FILE="spigot.version"
+        ;;
+    Custom)
+        SERVER_JAR="server.jar"
+        VERSION_FILE="custom.version"
+        ;;
     PowerNukkitX)
         SERVER_JAR="powernukkitx.jar"
         VERSION_FILE="powernukkitx.version"
@@ -50,51 +70,142 @@ case "$SERVER_TYPE" in
 esac
 
 SERVER_CMD="java -Xmx${SERVER_RAM} -Xms${MIN_RAM} -jar ${SERVER_JAR} --nogui"
+SERVER_PID_FILE="$SCRIPT_DIR/.server.pid"
+SERVER_LOG_FILE="$SCRIPT_DIR/server.log"
+MANAGER_PID_FILE="$SCRIPT_DIR/.manager.pid"
+MANAGER_LOG_FILE="$SCRIPT_DIR/manager.log"
+
+server_running() {
+    [[ -f "$SERVER_PID_FILE" ]] && kill -0 "$(cat "$SERVER_PID_FILE")" 2>/dev/null
+}
+
+manager_running() {
+    [[ -f "$MANAGER_PID_FILE" ]] && kill -0 "$(cat "$MANAGER_PID_FILE")" 2>/dev/null
+}
+
+start_manager() {
+    if ! manager_running; then
+        rm -f "$MANAGER_PID_FILE"
+        SERVER_TYPE="$SERVER_TYPE" nohup python3 "$SCRIPT_DIR/web/manager.py" > "$MANAGER_LOG_FILE" 2>&1 &
+        echo $! > "$MANAGER_PID_FILE"
+    fi
+
+    MANAGER_URL="http://127.0.0.1:8765"
+    if command -v termux-open-url >/dev/null 2>&1; then
+        termux-open-url "$MANAGER_URL" >/dev/null 2>&1 &
+    elif [[ -n "${BROWSER:-}" ]] && command -v "$BROWSER" >/dev/null 2>&1; then
+        "$BROWSER" "$MANAGER_URL" >/dev/null 2>&1 &
+    fi
+    echo -e "${CYAN}Manager: ${MANAGER_URL}${NC}"
+}
+
+start_server() {
+    if server_running; then
+        echo -e "${YELLOW}Server is already running.${NC}"
+        return 0
+    fi
+
+    rm -f "$SERVER_PID_FILE"
+    nohup java "-Xmx${SERVER_RAM}" "-Xms${MIN_RAM}" -jar "$SERVER_JAR" --nogui \
+        > "$SERVER_LOG_FILE" 2>&1 < /dev/null &
+    echo $! > "$SERVER_PID_FILE"
+    echo -e "${GREEN}${SERVER_TYPE} started in background.${NC}"
+    echo -e "${CYAN}Log: ${SERVER_LOG_FILE}${NC}"
+}
+
+stop_server() {
+    if server_running; then
+        kill "$(cat "$SERVER_PID_FILE")" 2>/dev/null || true
+        rm -f "$SERVER_PID_FILE"
+        echo -e "${GREEN}${SERVER_TYPE} stopped.${NC}"
+    else
+        rm -f "$SERVER_PID_FILE"
+        echo -e "${YELLOW}Server is not running.${NC}"
+    fi
+}
 
 # Function to auto-detect latest Paper version
 get_latest_paper() {
-    echo -e "${CYAN}🔍 Auto-detecting latest Paper version...${NC}"
-    
-    # Get latest version from PaperMC API
-    PAPER_VERSION="null"
-    if [[ -z "$PAPER_VERSION" ]]; then
-        PAPER_VERSION="null"
-    fi
-    
-    # Get latest build for that version
-    PAPER_BUILD=$(curl -s "https://api.papermc.io/v2/projects/paper/versions/${PAPER_VERSION}/builds" | grep -o '"build":[0-9]*' | grep -o '[0-9]*' | tail -1)
-    if [[ -z "$PAPER_BUILD" ]]; then
-        PAPER_BUILD="132"
-    fi
-    
-    echo -e "${GREEN}📦 Latest Paper: ${PAPER_VERSION}-${PAPER_BUILD}${NC}"
+    PAPER_VERSION=$(curl -fsSL https://api.papermc.io/v2/projects/paper | jq -r '.versions[-1]')
+    PAPER_BUILD=$(curl -fsSL "https://api.papermc.io/v2/projects/paper/versions/${PAPER_VERSION}/builds" | jq -r '.builds[-1].build')
+    echo -e "${GREEN}📦 Latest Paper: ${PAPER_VERSION}-${PAPER_BUILD}${NC}" >&2
     echo "${PAPER_VERSION}-${PAPER_BUILD}" > "$LOCAL_VERSIONS_DIR/paper.version"
-    
-    DOWNLOAD_URL="https://api.papermc.io/v2/projects/paper/versions/${PAPER_VERSION}/builds/${PAPER_BUILD}/downloads/paper-${PAPER_VERSION}-${PAPER_BUILD}.jar"
-    echo "$DOWNLOAD_URL"
+    echo "https://api.papermc.io/v2/projects/paper/versions/${PAPER_VERSION}/builds/${PAPER_BUILD}/downloads/paper-${PAPER_VERSION}-${PAPER_BUILD}.jar"
 }
 
 # Function to auto-detect latest Purpur version
 get_latest_purpur() {
-    echo -e "${CYAN}🔍 Auto-detecting latest Purpur version...${NC}"
-    
-    # Get latest version from Purpur API
-    PURPUR_VERSION=$(curl -s "https://api.purpurmc.org/v2/purpur" | grep -o '"[0-9]\+\.[0-9]\+\.[0-9]\+"' | tr -d '"' | tail -1)
-    if [[ -z "$PURPUR_VERSION" ]]; then
-        PURPUR_VERSION="1.26.2"
-    fi
-    
-    # Get latest build for that version
-    PURPUR_BUILD=$(curl -s "https://api.purpurmc.org/v2/purpur/${PURPUR_VERSION}" | grep -o '[0-9]*' | tail -1)
-    if [[ -z "$PURPUR_BUILD" ]]; then
-        PURPUR_BUILD="2622"
-    fi
-    
-    echo -e "${GREEN}📦 Latest Purpur: ${PURPUR_VERSION}-${PURPUR_BUILD}${NC}"
+    PURPUR_VERSION=$(curl -fsSL https://api.purpurmc.org/v2/purpur | jq -r '.versions[-1]')
+    PURPUR_BUILD=$(curl -fsSL "https://api.purpurmc.org/v2/purpur/${PURPUR_VERSION}" | jq -r '.builds.all[-1]')
+    echo -e "${GREEN}📦 Latest Purpur: ${PURPUR_VERSION}-${PURPUR_BUILD}${NC}" >&2
     echo "${PURPUR_VERSION}-${PURPUR_BUILD}" > "$LOCAL_VERSIONS_DIR/purpur.version"
-    
-    DOWNLOAD_URL="https://api.purpurmc.org/v2/purpur/${PURPUR_VERSION}/${PURPUR_BUILD}/download"
-    echo "$DOWNLOAD_URL"
+    echo "https://api.purpurmc.org/v2/purpur/${PURPUR_VERSION}/${PURPUR_BUILD}/download"
+}
+
+get_latest_folia() {
+    FOLIA_VERSION=$(curl -fsSL https://api.papermc.io/v2/projects/folia | jq -r '.versions[-1]')
+    FOLIA_BUILD=$(curl -fsSL "https://api.papermc.io/v2/projects/folia/versions/${FOLIA_VERSION}/builds" | jq -r '.builds[-1].build')
+    echo -e "${GREEN}📦 Latest Folia: ${FOLIA_VERSION}-${FOLIA_BUILD}${NC}" >&2
+    echo "${FOLIA_VERSION}-${FOLIA_BUILD}" > "$LOCAL_VERSIONS_DIR/folia.version"
+    echo "https://api.papermc.io/v2/projects/folia/versions/${FOLIA_VERSION}/builds/${FOLIA_BUILD}/downloads/folia-${FOLIA_VERSION}-${FOLIA_BUILD}.jar"
+}
+
+get_latest_vanilla() {
+    VANILLA_VERSION=$(curl -fsSL https://piston-meta.mojang.com/mc/game/version_manifest_v2.json | jq -r '.latest.release')
+    VANILLA_URL=$(curl -fsSL "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json" | jq -r ".versions[] | select(.id == \"${VANILLA_VERSION}\") | .url" | xargs curl -fsSL | jq -r '.downloads.server.url')
+    echo -e "${GREEN}📦 Latest Vanilla: ${VANILLA_VERSION}${NC}" >&2
+    echo "${VANILLA_VERSION}" > "$LOCAL_VERSIONS_DIR/vanilla.version"
+    echo "$VANILLA_URL"
+}
+
+get_latest_fabric() {
+    FABRIC_VERSION=$(curl -fsSL https://meta.fabricmc.net/v2/versions/game | jq -r '[.[] | select(.stable == true)][0].version')
+    FABRIC_LOADER=$(curl -fsSL https://meta.fabricmc.net/v2/versions/loader | jq -r '[.[] | select(.stable == true)][0].version')
+    FABRIC_INSTALLER=$(curl -fsSL https://meta.fabricmc.net/v2/versions/installer | jq -r '[.[] | select(.stable == true)][0].version')
+    echo -e "${GREEN}📦 Latest Fabric: ${FABRIC_VERSION} / loader ${FABRIC_LOADER}${NC}" >&2
+    echo "${FABRIC_VERSION}-${FABRIC_LOADER}" > "$LOCAL_VERSIONS_DIR/fabric.version"
+    echo "https://meta.fabricmc.net/v2/versions/loader/${FABRIC_VERSION}/${FABRIC_LOADER}/${FABRIC_INSTALLER}/server/jar"
+}
+
+get_latest_spigot() {
+    SPIGOT_VERSION=$(curl -fsSL https://piston-meta.mojang.com/mc/game/version_manifest_v2.json | jq -r '.latest.release')
+    echo -e "${GREEN}📦 Latest Spigot target: ${SPIGOT_VERSION}${NC}" >&2
+    echo "${SPIGOT_VERSION}" > "$LOCAL_VERSIONS_DIR/spigot.version"
+    echo "https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar"
+}
+
+detect_latest_version() {
+    case "$SERVER_TYPE" in
+        Paper)
+            DETECT_VERSION=$(curl -fsSL https://api.papermc.io/v2/projects/paper | jq -r '.versions[-1]')
+            DETECT_BUILD=$(curl -fsSL "https://api.papermc.io/v2/projects/paper/versions/${DETECT_VERSION}/builds" | jq -r '.builds[-1].build')
+            REPO_VERSION="${DETECT_VERSION}-${DETECT_BUILD}"
+            ;;
+        Purpur)
+            DETECT_VERSION=$(curl -fsSL https://api.purpurmc.org/v2/purpur | jq -r '.versions[-1]')
+            DETECT_BUILD=$(curl -fsSL "https://api.purpurmc.org/v2/purpur/${DETECT_VERSION}" | jq -r '.builds.all[-1]')
+            REPO_VERSION="${DETECT_VERSION}-${DETECT_BUILD}"
+            ;;
+        Folia)
+            DETECT_VERSION=$(curl -fsSL https://api.papermc.io/v2/projects/folia | jq -r '.versions[-1]')
+            DETECT_BUILD=$(curl -fsSL "https://api.papermc.io/v2/projects/folia/versions/${DETECT_VERSION}/builds" | jq -r '.builds[-1].build')
+            REPO_VERSION="${DETECT_VERSION}-${DETECT_BUILD}"
+            ;;
+        Vanilla|Spigot)
+            REPO_VERSION=$(curl -fsSL https://piston-meta.mojang.com/mc/game/version_manifest_v2.json | jq -r '.latest.release')
+            ;;
+        Fabric)
+            DETECT_VERSION=$(curl -fsSL https://meta.fabricmc.net/v2/versions/game | jq -r '[.[] | select(.stable == true)][0].version')
+            DETECT_LOADER=$(curl -fsSL https://meta.fabricmc.net/v2/versions/loader | jq -r '[.[] | select(.stable == true)][0].version')
+            REPO_VERSION="${DETECT_VERSION}-${DETECT_LOADER}"
+            ;;
+        PowerNukkitX)
+            REPO_VERSION=$(curl -fsSL https://api.github.com/repos/PowerNukkitX/PowerNukkitX/releases/latest | jq -r '.tag_name')
+            ;;
+        *)
+            REPO_VERSION=""
+            ;;
+    esac
 }
 
 # Function to auto-detect latest PowerNukkitX version
@@ -130,6 +241,30 @@ download_server() {
             PURPUR_URL=$(get_latest_purpur)
             wget -O server.jar "$PURPUR_URL"
             ;;
+        Folia)
+            echo -e "${YELLOW}⬇️  Downloading latest Folia...${NC}"
+            FOLIA_URL=$(get_latest_folia)
+            wget -O server.jar "$FOLIA_URL"
+            ;;
+        Vanilla)
+            echo -e "${YELLOW}⬇️  Downloading latest Vanilla...${NC}"
+            VANILLA_URL=$(get_latest_vanilla)
+            wget -O server.jar "$VANILLA_URL"
+            ;;
+        Fabric)
+            echo -e "${YELLOW}⬇️  Downloading latest Fabric...${NC}"
+            FABRIC_URL=$(get_latest_fabric)
+            wget -O server.jar "$FABRIC_URL"
+            ;;
+        Spigot)
+            echo -e "${YELLOW}⬇️  Building latest Spigot with BuildTools...${NC}"
+            get_latest_spigot > "$SCRIPT_DIR/.spigot-url"
+            SPIGOT_VERSION=$(cat "$LOCAL_VERSIONS_DIR/spigot.version")
+            wget -q -O BuildTools.jar "$(cat "$SCRIPT_DIR/.spigot-url")"
+            java -jar BuildTools.jar --rev "$SPIGOT_VERSION"
+            mv "spigot-${SPIGOT_VERSION}.jar" server.jar
+            rm -f BuildTools.jar "$SCRIPT_DIR/.spigot-url"
+            ;;
         PowerNukkitX)
             echo -e "${MAGENTA}⬇️  Downloading latest PowerNukkitX (Bedrock)...${NC}"
             PNX_URL=$(get_latest_pnx)
@@ -161,22 +296,7 @@ check_repo_update() {
         echo -e "${YELLOW}⚠️  Could not fetch version from repo${NC}"
         echo -e "${YELLOW}   Using auto-detect...${NC}"
         
-        # Auto-detect instead
-        case "$SERVER_TYPE" in
-            Paper)
-                REPO_VERSION=$(curl -s "https://api.papermc.io/v2/projects/paper" | grep -o '"[0-9]\+\.[0-9]\+\.[0-9]\+"' | tr -d '"' | tail -1)
-                REPO_BUILD=$(curl -s "https://api.papermc.io/v2/projects/paper/versions/${REPO_VERSION}/builds" | grep -o '"build":[0-9]*' | grep -o '[0-9]*' | tail -1)
-                REPO_VERSION="${REPO_VERSION}-${REPO_BUILD}"
-                ;;
-            Purpur)
-                REPO_VERSION=$(curl -s "https://api.purpurmc.org/v2/purpur" | grep -o '"[0-9]\+\.[0-9]\+\.[0-9]\+"' | tr -d '"' | tail -1)
-                REPO_BUILD=$(curl -s "https://api.purpurmc.org/v2/purpur/${REPO_VERSION}" | grep -o '[0-9]*' | tail -1)
-                REPO_VERSION="${REPO_VERSION}-${REPO_BUILD}"
-                ;;
-            PowerNukkitX)
-                REPO_VERSION=$(curl -s "https://api.github.com/repos/PowerNukkitX/PowerNukkitX/releases/latest" | grep -o '"tag_name":"[^"]*"' | cut -d'"' -f4)
-                ;;
-        esac
+        detect_latest_version
     fi
     
     if [[ -z "$REPO_VERSION" ]]; then
@@ -209,22 +329,7 @@ update_from_repo() {
     echo -e "${CYAN}🔄 Checking for ${SERVER_TYPE} updates...${NC}"
     echo ""
     
-    # Auto-detect latest version
-    case "$SERVER_TYPE" in
-        Paper)
-            LATEST_VERSION=$(curl -s "https://api.papermc.io/v2/projects/paper" | grep -o '"[0-9]\+\.[0-9]\+\.[0-9]\+"' | tr -d '"' | tail -1)
-            LATEST_BUILD=$(curl -s "https://api.papermc.io/v2/projects/paper/versions/${LATEST_VERSION}/builds" | grep -o '"build":[0-9]*' | grep -o '[0-9]*' | tail -1)
-            REPO_VERSION="${LATEST_VERSION}-${LATEST_BUILD}"
-            ;;
-        Purpur)
-            LATEST_VERSION=$(curl -s "https://api.purpurmc.org/v2/purpur" | grep -o '"[0-9]\+\.[0-9]\+\.[0-9]\+"' | tr -d '"' | tail -1)
-            LATEST_BUILD=$(curl -s "https://api.purpurmc.org/v2/purpur/${LATEST_VERSION}" | grep -o '[0-9]*' | tail -1)
-            REPO_VERSION="${LATEST_VERSION}-${LATEST_BUILD}"
-            ;;
-        PowerNukkitX)
-            REPO_VERSION=$(curl -s "https://api.github.com/repos/PowerNukkitX/PowerNukkitX/releases/latest" | grep -o '"tag_name":"[^"]*"' | cut -d'"' -f4)
-            ;;
-    esac
+    detect_latest_version
     
     if [[ -z "$REPO_VERSION" ]]; then
         echo -e "${YELLOW}⚠️  Could not connect to APIs${NC}"
@@ -284,10 +389,14 @@ select_software() {
     echo -e "${BLUE}╠════════════════════════════════════════════════╣${NC}"
     echo -e "${BLUE}║${NC}  ${GREEN}[1] PaperMC${NC}     - Java Edition (Recommended) ${BLUE}║${NC}"
     echo -e "${BLUE}║${NC}  ${CYAN}[2] Purpur${NC}      - Java Edition (Fork)       ${BLUE}║${NC}"
-    echo -e "${BLUE}║${NC}  ${MAGENTA}[3] PowerNukkitX${NC} - Bedrock Edition         ${BLUE}║${NC}"
+    echo -e "${BLUE}║${NC}  ${CYAN}[3] Folia${NC}       - Java Edition (Threads)    ${BLUE}║${NC}"
+    echo -e "${BLUE}║${NC}  ${GREEN}[4] Vanilla${NC}     - Official Java Edition    ${BLUE}║${NC}"
+    echo -e "${BLUE}║${NC}  ${GREEN}[5] Fabric${NC}      - Java Edition (Mods)       ${BLUE}║${NC}"
+    echo -e "${BLUE}║${NC}  ${YELLOW}[6] Spigot${NC}      - Java Edition (BuildTools) ${BLUE}║${NC}"
+    echo -e "${BLUE}║${NC}  ${MAGENTA}[7] PowerNukkitX${NC} - Bedrock Edition         ${BLUE}║${NC}"
     echo -e "${BLUE}╚════════════════════════════════════════════════╝${NC}"
     echo ""
-    read -p "Enter your choice (1-3): " choice
+    read -p "Enter your choice (1-7): " choice
     
     case "$choice" in
         1)
@@ -303,6 +412,30 @@ select_software() {
             echo -e "${GREEN}✅ Selected: Purpur (Java)${NC}"
             ;;
         3)
+            SERVER_TYPE="Folia"
+            VERSION_FILE="folia.version"
+            SERVER_JAR="server.jar"
+            echo -e "${GREEN}✅ Selected: Folia (Java)${NC}"
+            ;;
+        4)
+            SERVER_TYPE="Vanilla"
+            VERSION_FILE="vanilla.version"
+            SERVER_JAR="server.jar"
+            echo -e "${GREEN}✅ Selected: Vanilla (Java)${NC}"
+            ;;
+        5)
+            SERVER_TYPE="Fabric"
+            VERSION_FILE="fabric.version"
+            SERVER_JAR="server.jar"
+            echo -e "${GREEN}✅ Selected: Fabric (Java Mods)${NC}"
+            ;;
+        6)
+            SERVER_TYPE="Spigot"
+            VERSION_FILE="spigot.version"
+            SERVER_JAR="server.jar"
+            echo -e "${GREEN}✅ Selected: Spigot (Java)${NC}"
+            ;;
+        7)
             SERVER_TYPE="PowerNukkitX"
             VERSION_FILE="powernukkitx.version"
             SERVER_JAR="powernukkitx.jar"
@@ -323,6 +456,12 @@ select_software() {
             ;;
         Purpur)
             MC_VER=$(curl -s "https://api.purpurmc.org/v2/purpur" | grep -o '"[0-9]\+\.[0-9]\+\.[0-9]\+"' | tr -d '"' | tail -1)
+            ;;
+        Folia)
+            MC_VER=$(curl -fsSL "https://api.papermc.io/v2/projects/folia" | jq -r '.versions[-1]')
+            ;;
+        Vanilla|Fabric|Spigot)
+            MC_VER=$(curl -fsSL https://piston-meta.mojang.com/mc/game/version_manifest_v2.json | jq -r '.latest.release')
             ;;
         PowerNukkitX)
             MC_VER="latest"
@@ -348,22 +487,8 @@ check_server_jar() {
     if [[ -f "$LOCAL_VERSIONS_DIR/${VERSION_FILE}" ]]; then
         LOCAL_VER=$(cat "$LOCAL_VERSIONS_DIR/${VERSION_FILE}")
         
-        # Auto-detect latest
-        case "$SERVER_TYPE" in
-            Paper)
-                LATEST_VER=$(curl -s "https://api.papermc.io/v2/projects/paper" | grep -o '"[0-9]\+\.[0-9]\+\.[0-9]\+"' | tr -d '"' | tail -1)
-                LATEST_BUILD=$(curl -s "https://api.papermc.io/v2/projects/paper/versions/${LATEST_VER}/builds" | grep -o '"build":[0-9]*' | grep -o '[0-9]*' | tail -1)
-                REPO_VER="${LATEST_VER}-${LATEST_BUILD}"
-                ;;
-            Purpur)
-                LATEST_VER=$(curl -s "https://api.purpurmc.org/v2/purpur" | grep -o '"[0-9]\+\.[0-9]\+\.[0-9]\+"' | tr -d '"' | tail -1)
-                LATEST_BUILD=$(curl -s "https://api.purpurmc.org/v2/purpur/${LATEST_VER}" | grep -o '[0-9]*' | tail -1)
-                REPO_VER="${LATEST_VER}-${LATEST_BUILD}"
-                ;;
-            PowerNukkitX)
-                REPO_VER=$(curl -s "https://api.github.com/repos/PowerNukkitX/PowerNukkitX/releases/latest" | grep -o '"tag_name":"[^"]*"' | cut -d'"' -f4)
-                ;;
-        esac
+        detect_latest_version
+        REPO_VER="$REPO_VERSION"
         
         if [[ -n "$REPO_VER" && "$LOCAL_VER" != "$REPO_VER" ]]; then
             echo -e "${YELLOW}⚠️  New version available: ${REPO_VER}${NC}"
@@ -402,7 +527,7 @@ case "$2" in
             echo -e "${GREEN}📦 Version: ${CURRENT_VER}${NC}"
         fi
         
-        $SERVER_CMD
+        start_server
         ;;
     restart)
         check_server_jar
@@ -415,11 +540,12 @@ case "$2" in
             echo -e "${GREEN}📦 Version: ${CURRENT_VER}${NC}"
         fi
         
-        $SERVER_CMD
+        stop_server
+        start_server
         ;;
     stop)
-        echo -e "${RED}🛑 Sending stop command to server...${NC}"
-        touch "$SCRIPT_DIR/.stop_requested"
+        echo -e "${RED}🛑 Stopping server...${NC}"
+        stop_server
         ;;
     delete)
         echo -e "${RED}❌ Deleting server files...${NC}"
@@ -432,12 +558,10 @@ case "$2" in
         fi
         ;;
     plugins)
-        if [[ "$SERVER_TYPE" == "PowerNukkitX" ]]; then
-            echo -e "${YELLOW}⚠️  PowerNukkitX uses different plugin format (.nukkit)${NC}"
-            echo -e "${CYAN}ℹ️  Place .jar plugins in the plugins folder manually${NC}"
-        else
-            bash "$SCRIPT_DIR/plugins/download_plugins.sh"
-        fi
+        start_manager
+        ;;
+    mods|manager)
+        start_manager
         ;;
     update)
         update_from_repo
@@ -446,7 +570,7 @@ case "$2" in
         check_repo_update
         ;;
     status)
-        if pgrep -f "${SERVER_JAR}" > /dev/null; then
+        if server_running; then
             echo -e "${GREEN}✅ ${SERVER_TYPE} server is running!${NC}"
             # Show version
             if [[ -f "$LOCAL_VERSIONS_DIR/${VERSION_FILE}" ]]; then
@@ -475,6 +599,8 @@ case "$2" in
         echo "  stop       - Request server stop"
         echo "  delete     - Delete world and plugin files (DANGER!)"
         echo "  plugins    - Download plugins (Java only)"
+        echo "  mods       - Open the local Mods manager"
+        echo "  manager    - Open the local Mods and Plugins manager"
         echo "  update     - Check repo & update to latest version"
         echo "  check      - Check if new version available"
         echo "  status     - Check if server is running"

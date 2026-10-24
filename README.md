@@ -1,6 +1,6 @@
 # Minecraft Panel Pro 🔥
 
-A Termux-optimized Minecraft server management panel supporting both **Java** (Paper/Purpur) and **Bedrock** (PowerNukkitX) editions!
+A Termux-optimized Minecraft server management panel supporting common **Java** server software and **Bedrock** (PowerNukkitX).
 
 **🎮 Now supporting Minecraft 1.26.x (2026 Edition)!**
 
@@ -43,7 +43,11 @@ This will show a menu:
 ╠════════════════════════════════════════════════╣
 ║  [1] PaperMC     - Java Edition (Recommended) ║
 ║  [2] Purpur      - Java Edition (Fork)        ║
-║  [3] PowerNukkitX - Bedrock Edition           ║
+║  [3] Folia       - Java Edition (Threads)     ║
+║  [4] Vanilla     - Official Java Edition     ║
+║  [5] Fabric      - Java Edition (Mods)        ║
+║  [6] Spigot      - Java Edition (BuildTools)  ║
+║  [7] PowerNukkitX - Bedrock Edition           ║
 ╚════════════════════════════════════════════════╝
 ```
 
@@ -60,9 +64,27 @@ mc -s status     # Check status + current version
 mc -s delete     # Delete world (CAREFUL!)
 mc -s software   # Change server software
 
-# Java only:
-mc -s plugins    # Download Geyser + Floodgate
+# Local browser manager:
+mc -s manager     # Open Mods and Plugins manager
+mc -s mods       # Open Mods manager
+mc -s plugins    # Open Plugins manager
 ```
+
+The local manager also supports:
+
+- Modrinth search and one-click mod/plugin installation
+- CurseForge search and one-click mod/plugin installation
+- Modrinth `.mrpack` import with required files and overrides
+- Custom software JAR download with custom version selection
+- Web Settings for menu title and accent color customization
+- Refreshing local files without restarting the server
+
+CurseForge requires a personal API key. Open `mc -s manager`, enter the key in
+**Settings**, and save it. The key is stored only in the local
+`core/manager-settings.json` file and is not shown back in the browser.
+
+Custom software is saved as `server.jar` and becomes the selected software the
+next time the `mc` menu is opened.
 
 ## 🔄 Update System
 
@@ -125,7 +147,11 @@ When new versions are released:
 | Type | Edition | Description |
 |------|---------|-------------|
 | **PaperMC** | Java | High performance, plugin support (1.26.x) |
-| **Purpur** | Java | Paper fork with extra features (1.26.x) |
+| **Purpur** | Java | Paper fork with extra features |
+| **Folia** | Java | Regionised multithreaded Paper fork |
+| **Vanilla** | Java | Official Mojang server |
+| **Fabric** | Java | Lightweight mod-loader server |
+| **Spigot** | Java | BuildTools-based plugin server |
 | **PowerNukkitX** | Bedrock | Minecraft Bedrock for Termux |
 
 ## Ports 🔌
